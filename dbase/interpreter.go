@@ -343,25 +343,21 @@ func (file *File) getDateRepresentation(field *Field, _ bool) ([]byte, error) {
 			return nil, NewErrorf("invalid data type %T, expected time.Time at column field: %v", field.value, field.Name())
 		}
 
-		var t time.Time
+		t := time.Time{}
 		var err error
-		if len(s) == 0 {
-			t = time.Time{}
-		} else {
+		if len(s) > 0 {
 			t, err = time.Parse(time.RFC3339, s)
-		}
-		if err != nil {
-			return nil, NewErrorf("parsing time failed at column field: %v failed", field.Name()).Details(err)
+			if err != nil {
+				return nil, NewErrorf("parsing time failed at column field: %v failed", field.Name()).Details(err)
+			}
 		}
 
 		d = t
 	}
 
 	raw := make([]byte, field.column.Length)
-	var bin []byte
-	if d.IsZero() {
-		bin = []byte(strings.Repeat(" ", int(field.column.Length)))
-	} else {
+	bin := []byte(strings.Repeat(" ", int(field.column.Length)))
+	if !d.IsZero() {
 		bin = []byte(d.Format("20060102"))
 	}
 	copy(raw, bin)
