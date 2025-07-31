@@ -3,6 +3,7 @@ package dbase
 import (
 	"encoding/binary"
 	"math"
+	"strings"
 	"testing"
 	"time"
 
@@ -384,6 +385,59 @@ func TestFile_getLogicalRepresentation(t *testing.T) {
 	_, err = file.getLogicalRepresentation(field, false)
 	if err == nil {
 		t.Error("Expected error for invalid data type")
+	}
+}
+
+func TestFile_getDateRepresentation(t *testing.T) {
+	file := &File{}
+
+	// Create a column
+	column := &Column{
+		Length: 8, // logical is 1 byte
+	}
+	copy(column.FieldName[:], "testlog")
+
+	val, _ := time.Parse("2006-01-02", "2025-01-01")
+	field := &Field{
+		column: column,
+		value:  val,
+	}
+
+	result, err := file.getDateRepresentation(field, false)
+	if err != nil {
+		t.Errorf("Unexpected error: %v", err)
+	}
+	if len(result) != 8 {
+		t.Errorf("Expected 8 bytes, got %d", len(result))
+	}
+	if (string(result) != "20250101") {
+		t.Errorf("Expected result to be '20250101' got %s", string(result))
+	}
+}
+
+func TestFile_getDateRepresentationForEmptyDate(t *testing.T) {
+	file := &File{}
+
+	// Create a column
+	column := &Column{
+		Length: 8, // logical is 1 byte
+	}
+	copy(column.FieldName[:], "testlog")
+
+	field := &Field{
+		column: column,
+		value:  time.Time{},
+	}
+
+	result, err := file.getDateRepresentation(field, false)
+	if err != nil {
+		t.Errorf("Unexpected error: %v", err)
+	}
+	if len(result) != 8 {
+		t.Errorf("Expected 8 bytes, got %d", len(result))
+	}
+	if (string(result) != strings.Repeat(" ", 8)) {
+		t.Errorf("Expected result to be a string of 8 spaces got %s", string(result))
 	}
 }
 

@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"math"
 	"strconv"
+	"strings"
 	"time"
 )
 
@@ -341,14 +342,24 @@ func (file *File) getDateRepresentation(field *Field, _ bool) ([]byte, error) {
 		if !ok {
 			return nil, NewErrorf("invalid data type %T, expected time.Time at column field: %v", field.value, field.Name())
 		}
-		t, err := time.Parse(time.RFC3339, s)
-		if err != nil {
-			return nil, NewErrorf("parsing time failed at column field: %v failed", field.Name()).Details(err)
+
+		t := time.Time{}
+		var err error
+		if len(s) > 0 {
+			t, err = time.Parse(time.RFC3339, s)
+			if err != nil {
+				return nil, NewErrorf("parsing time failed at column field: %v failed", field.Name()).Details(err)
+			}
 		}
+
 		d = t
 	}
+
 	raw := make([]byte, field.column.Length)
-	bin := []byte(d.Format("20060102"))
+	bin := []byte(strings.Repeat(" ", int(field.column.Length)))
+	if !d.IsZero() {
+		bin = []byte(d.Format("20060102"))
+	}
 	copy(raw, bin)
 	if len(raw) != int(field.column.Length) {
 		return nil, NewErrorf("invalid length %v bytes != %v bytes at column field: %v", len(raw), field.column.Length, field.Name())
