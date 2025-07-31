@@ -281,7 +281,7 @@ func (u UnixIO) ReadColumns(file *File) ([]*Column, *Column, error) {
 }
 
 func (u UnixIO) WriteColumns(file *File) error {
-	debugf("Writing columns - exclusive writing: %v", file.config.WriteLock)
+	debugf("Writing columns for %s - exclusive writing: %v", file.table.name, file.config.WriteLock)
 	handle, err := u.getHandle(file)
 	if err != nil {
 		return WrapError(err)
@@ -316,14 +316,17 @@ func (u UnixIO) WriteColumns(file *File) error {
 	if err != nil {
 		return NewError("failed to write column terminator").Details(err)
 	}
-	// Write null till the end of the header
-	pos := file.header.FirstRow - uint16(len(file.table.columns)*32) - 33
-	if file.nullFlagColumn != nil {
-		pos -= 32
-	}
-	_, err = handle.Write(make([]byte, pos))
-	if err != nil {
-		return NewError("failed to write null till the end of the header").Details(err)
+
+	if file.isNew {
+		// Write null till the end of the header
+		pos := file.header.FirstRow - uint16(len(file.table.columns)*32) - 33
+		if file.nullFlagColumn != nil {
+			pos -= 32
+		}
+		_, err = handle.Write(make([]byte, pos))
+		if err != nil {
+			return NewError("failed to write null till the end of the header").Details(err)
+		}
 	}
 	return nil
 }
@@ -437,7 +440,7 @@ func (u UnixIO) ReadMemo(file *File, blockdata []byte) ([]byte, bool, error) {
 
 func (u UnixIO) WriteMemo(address []byte, file *File, raw []byte, text bool, length int) ([]byte, error) {
 	if isEmptyBytes(raw) {
-		debugf("no memo data to write")
+		debugf("no memo data to write for %s", file.TableName())
 		return []byte{}, nil
 	}
 	file.memoMutex.Lock()

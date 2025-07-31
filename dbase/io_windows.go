@@ -369,14 +369,17 @@ func (w WindowsIO) WriteColumns(file *File) (err error) {
 	if err != nil {
 		return NewErrorf("writing column terminator failed").Details(err)
 	}
-	// Write null till the end of the header
-	pos := file.header.FirstRow - uint16(len(file.table.columns)*32) - 33
-	if file.nullFlagColumn != nil {
-		pos -= 32
-	}
-	_, err = windows.Write(*handle, make([]byte, pos))
-	if err != nil {
-		return NewErrorf("writing null till the end of the header failed").Details(err)
+
+	if file.isNew {
+		// Write null till the end of the header
+		pos := file.header.FirstRow - uint16(len(file.table.columns)*32) - 33
+		if file.nullFlagColumn != nil {
+			pos -= 32
+		}
+		_, err = windows.Write(*handle, make([]byte, pos))
+		if err != nil {
+			return NewErrorf("writing null till the end of the header failed").Details(err)
+		}
 	}
 	return nil
 }
