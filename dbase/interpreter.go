@@ -195,13 +195,13 @@ func (file *File) getCharacterRepresentation(field *Field, skipSpacing bool) ([]
 	if !ok {
 		return nil, NewErrorf("invalid data type %T, expected string on column field: %v", field.value, field.Name())
 	}
-	if len(c) > MaxCharacterLength {
-		return nil, NewErrorf("invalid length %v bytes > %v bytes at column field: %v", len(c), MaxCharacterLength, field.Name())
-	}
 	raw := make([]byte, field.column.Length)
 	bin, err := fromUtf8String([]byte(c), file.config.Converter)
 	if err != nil {
 		return nil, NewErrorf("parsing from utf8 string at column field: %v failed", field.Name()).Details(err)
+	}
+	if len(bin) > MaxCharacterLength {
+		return nil, NewErrorf("invalid length %v bytes > %v bytes at column field: %v", len(bin), MaxCharacterLength, field.Name())
 	}
 	if skipSpacing {
 		return bin, nil
