@@ -260,14 +260,16 @@ func (g GenericIO) WriteColumns(file *File) error {
 	if err != nil {
 		return NewErrorf("failed to write column terminator").Details(err)
 	}
-	// Write null till the end of the header
-	pos := file.header.FirstRow - uint16(len(file.table.columns)*32) - 33
-	if file.nullFlagColumn != nil {
-		pos -= 32
-	}
-	_, err = handle.Write(make([]byte, pos))
-	if err != nil {
-		return NewErrorf("failed to write null till end of header").Details(err)
+	if file.isNew {
+		// Write null till the end of the header
+		pos := file.header.FirstRow - uint16(len(file.table.columns)*32) - 33
+		if file.nullFlagColumn != nil {
+			pos -= 32
+		}
+		_, err = handle.Write(make([]byte, pos))
+		if err != nil {
+			return NewErrorf("failed to write null till end of header").Details(err)
+		}
 	}
 	return nil
 }

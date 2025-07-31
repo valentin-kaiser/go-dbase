@@ -43,6 +43,7 @@ func (file *File) Close() error {
 
 // Creates a new dBase database file (and the memo file if needed).
 func (file *File) Create() error {
+	file.isNew = true
 	return file.defaults().io.Create(file)
 }
 

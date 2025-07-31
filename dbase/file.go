@@ -20,6 +20,7 @@ type File struct {
 	memoMutex      *sync.Mutex // Mutex locks for concurrent writing access to the FPT file.
 	table          *Table      // Containing the columns and internal row pointer.
 	nullFlagColumn *Column     // The column containing the null flag column (if varchar or varbinary field exists).
+	isNew          bool
 }
 
 func (file *File) TableName() string {
