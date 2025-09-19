@@ -131,7 +131,7 @@ func (file *File) parseMemo(raw []byte, column *Column) (interface{}, error) {
 	if isEmptyBytes(raw) {
 		return []byte{}, nil
 	}
-	memo, isText, err := file.ReadMemo(raw)
+	memo, isText, err := file.ReadMemo(raw, column)
 	if err != nil {
 		return nil, NewErrorf("parsing memo failed at column field: %v failed", column.Name()).Details(err)
 	}

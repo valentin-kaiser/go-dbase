@@ -15,7 +15,7 @@ type IO interface {
 	WriteColumns(file *File) error
 	ReadMemoHeader(file *File) error
 	WriteMemoHeader(file *File, size int) error
-	ReadMemo(file *File, address []byte) ([]byte, bool, error)
+	ReadMemo(file *File, address []byte, column *Column) ([]byte, bool, error)
 	WriteMemo(address []byte, file *File, raw []byte, text bool, length int) ([]byte, error)
 	ReadNullFlag(file *File, position uint64, column *Column) (bool, bool, error)
 	ReadRow(file *File, position uint32) ([]byte, error)
@@ -90,8 +90,8 @@ func (file *File) WriteRow(row *Row) error {
 
 // Reads one or more blocks from the FPT file, called for each memo column.
 // the return value is the raw data and true if the data read is text (false is RAW binary data).
-func (file *File) ReadMemo(address []byte) ([]byte, bool, error) {
-	return file.defaults().io.ReadMemo(file, address)
+func (file *File) ReadMemo(address []byte, column *Column) ([]byte, bool, error) {
+	return file.defaults().io.ReadMemo(file, address, column)
 }
 
 // WriteMemo writes a memo to the memo file and returns the address of the memo.

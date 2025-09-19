@@ -280,7 +280,7 @@ func (file *File) BytesToRow(data []byte) (*Row, error) {
 
 // Converts a map of interfaces into the row representation
 func (file *File) RowFromMap(m map[string]interface{}) (*Row, error) {
-	debugf("Converting map to row...")
+	debugf("Converting map to row... \n%+v", m)
 	row := file.NewRow()
 	for i := range row.fields {
 		field := &Field{column: file.table.columns[i]}

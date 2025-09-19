@@ -406,7 +406,7 @@ func (w WindowsIO) ReadNullFlag(file *File, position uint64, column *Column) (bo
 	if n != int(file.nullFlagColumn.Length) {
 		return false, false, NewErrorf("read %d bytes, expected %d", n, file.nullFlagColumn.Length)
 	}
-	if column.Flag == byte(NullableFlag) || column.Flag == byte(NullableFlag|BinaryFlag) {
+	if column.Flag.Has(byte(NullableFlag)) {
 		debugf("Read _NullFlag for column %s => varlength: %v - null: %v", column.Name(), getNthBit(buf, nullFlagPosition), getNthBit(buf, nullFlagPosition+1))
 		return getNthBit(buf, nullFlagPosition), getNthBit(buf, nullFlagPosition+1), nil
 	}
@@ -439,7 +439,7 @@ func (w WindowsIO) ReadMemoHeader(file *File) error {
 	return nil
 }
 
-func (w WindowsIO) ReadMemo(file *File, address []byte) ([]byte, bool, error) {
+func (w WindowsIO) ReadMemo(file *File, address []byte, column *Column) ([]byte, bool, error) {
 	if file.relatedHandle == nil {
 		return nil, false, NewErrorf("no FPT file found")
 	}
@@ -469,7 +469,7 @@ func (w WindowsIO) ReadMemo(file *File, address []byte) ([]byte, bool, error) {
 	}
 	sign := binary.BigEndian.Uint32(hbuf[:4])
 	leng := binary.BigEndian.Uint32(hbuf[4:])
-	debugf("Memo block header => text: %v, length: %d", sign == 1, leng)
+	debugf("Memo block header for field %v => type: %v, binary: %v, length: %d", column.FieldName, sign, column.Flag.Has(byte(BinaryFlag)), leng)
 	if leng == 0 {
 		// No data according to block header? Not sure if this should be an error instead
 		return []byte{}, sign == 1, nil
@@ -483,7 +483,7 @@ func (w WindowsIO) ReadMemo(file *File, address []byte) ([]byte, bool, error) {
 	if read != int(leng) {
 		return buf, sign == 1, NewErrorf("read %d bytes, expected %d", read, leng)
 	}
-	if sign == 1 {
+	if sign == 1 || !column.Flag.Has(byte(BinaryFlag)) {
 		buf, err = file.config.Converter.Decode(buf)
 		if err != nil {
 			return buf, sign == 1, WrapError(err)
