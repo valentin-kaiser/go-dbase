@@ -454,28 +454,53 @@ func (file *File) parseNumeric(raw []byte, column *Column) (interface{}, error) 
 	return file.parseFloat(raw, column)
 }
 
-// Get the integer or float64 value as byte representation
+// Get the integer or float value as byte representation (supports int32/int64 and float32/float64).
+// Get the integer or float value as byte representation (supports int32/int64, uint/uint32/uint64, float32/float64).
 func (file *File) getNumericRepresentation(field *Field, skipSpacing bool) ([]byte, error) {
-	// N values are stored as string values, if no decimals return as int64, if decimals treat as float64
-	bin := make([]byte, 0)
-	f, fok := field.value.(float64)
-	if fok {
-		if f == float64(int64(f)) {
-			// if the value has no decimals, store as integer
+	var bin []byte
+
+	switch v := field.value.(type) {
+	case float64:
+		// If no decimals, store as integer; otherwise format as float with Decimals precision
+		if v == math.Trunc(v) {
+			bin = []byte(strconv.FormatInt(int64(v), 10))
+		} else {
+			bin = []byte(strconv.FormatFloat(v, 'f', int(field.column.Decimals), 64))
+		}
+
+	case float32:
+		f := float64(v)
+		if f == math.Trunc(f) {
 			bin = []byte(strconv.FormatInt(int64(f), 10))
 		} else {
-			// if the value is a float, store as float
-			expression := fmt.Sprintf("%%.%df", field.column.Decimals)
-			bin = []byte(fmt.Sprintf(expression, field.value))
+			bin = []byte(strconv.FormatFloat(f, 'f', int(field.column.Decimals), 64))
 		}
+
+	case int64:
+		bin = []byte(strconv.FormatInt(v, 10))
+
+	case int32:
+		bin = []byte(strconv.FormatInt(int64(v), 10))
+
+	case int:
+		bin = []byte(strconv.FormatInt(int64(v), 10))
+
+	case uint64:
+		bin = []byte(strconv.FormatUint(v, 10))
+
+	case uint32:
+		bin = []byte(strconv.FormatUint(uint64(v), 10))
+
+	case uint:
+		bin = []byte(strconv.FormatUint(uint64(v), 10))
+
+	default:
+		return nil, NewErrorf(
+			"invalid data type %T, expected int32/int64, uint/uint32/uint64 or float32/float64 at column field: %v",
+			field.value, field.Name(),
+		)
 	}
-	_, iok := field.value.(int64)
-	if iok {
-		bin = []byte(fmt.Sprintf("%d", field.value))
-	}
-	if !iok && !fok {
-		return nil, NewErrorf("invalid data type %T, expected int64 or float64 at column field: %v", field.value, field.Name())
-	}
+
 	if skipSpacing {
 		return bin, nil
 	}

@@ -284,21 +284,30 @@ func (file *File) RowFromMap(m map[string]interface{}) (*Row, error) {
 	row := file.NewRow()
 	for i := range row.fields {
 		field := &Field{column: file.table.columns[i]}
+		if val, ok := m[field.Name()]; ok {
+			field.value = val
+		}
+
 		if i >= 0 && i < len(file.table.mods) {
 			if mod := file.table.mods[i]; mod != nil {
 				if len(mod.ExternalKey) != 0 {
 					if val, ok := m[mod.ExternalKey]; ok {
 						debugf("Resolving external key %v for field %v due to modification", mod.ExternalKey, field.Name())
 						field.value = val
-						row.fields[i] = field
-						continue
+					}
+				}
+
+				if mod.Convert != nil {
+					debugf("Converting field %v due to modification", field.Name())
+					var err error
+					field.value, err = mod.Convert(field.value)
+					if err != nil {
+						return nil, WrapError(err)
 					}
 				}
 			}
 		}
-		if val, ok := m[field.Name()]; ok {
-			field.value = val
-		}
+
 		row.fields[i] = field
 	}
 	err := row.Increment()
