@@ -97,7 +97,7 @@ func TestColumnFlag_Constants(t *testing.T) {
 		HiddenFlag:        0x01,
 		NullableFlag:      0x02,
 		BinaryFlag:        0x04,
-		AutoincrementFlag: 0x0C,
+		AutoincrementFlag: 0x08,
 	}
 
 	for _, flag := range flags {
