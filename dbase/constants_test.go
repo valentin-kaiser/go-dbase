@@ -1,9 +1,7 @@
 package dbase
 
 import (
-	"reflect"
 	"testing"
-	"time"
 )
 
 func TestFileVersion_Constants(t *testing.T) {
@@ -46,50 +44,6 @@ func TestFileExtension_Constants(t *testing.T) {
 		if string(ext) != expected {
 			t.Errorf("Expected FileExtension %v to have value %s, got %s", ext, expected, string(ext))
 		}
-	}
-}
-
-func TestDataType_Reflect(t *testing.T) {
-	testCases := []struct {
-		dataType     DataType
-		expectedType reflect.Type
-	}{
-		{Character, reflect.TypeOf("")},
-		{Date, reflect.TypeOf(time.Time{})},
-		{Float, reflect.TypeOf(float64(0))},
-		{Integer, reflect.TypeOf(int32(0))},
-		{Logical, reflect.TypeOf(false)},
-		{Memo, reflect.TypeOf([]byte{})},
-		{Numeric, reflect.TypeOf(float64(0))},
-		{Double, reflect.TypeOf(float64(0))},
-		{Currency, reflect.TypeOf(float64(0))},
-		{DateTime, reflect.TypeOf(time.Time{})},
-		{Varchar, reflect.TypeOf([]byte{})},
-		{Varbinary, reflect.TypeOf([]byte{})},
-		{Blob, reflect.TypeOf([]byte{})},
-		{General, reflect.TypeOf([]byte{})},
-		{Picture, reflect.TypeOf([]byte{})},
-	}
-
-	for _, tc := range testCases {
-		result, err := tc.dataType.Reflect()
-		if err != nil {
-			t.Errorf("Unexpected error for DataType %v: %v", tc.dataType, err)
-			continue
-		}
-
-		if result != tc.expectedType {
-			t.Errorf("For DataType %v, expected type %v, got %v", tc.dataType, tc.expectedType, result)
-		}
-	}
-}
-
-func TestDataType_Reflect_Unknown(t *testing.T) {
-	// Test with unknown data type
-	unknownType := DataType(255)
-	_, err := unknownType.Reflect()
-	if err == nil {
-		t.Error("Expected error for unknown data type")
 	}
 }
 

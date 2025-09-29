@@ -4,6 +4,7 @@ import (
 	"encoding/binary"
 	"fmt"
 	"math"
+	"math/big"
 	"strconv"
 	"strings"
 	"time"
@@ -386,6 +387,9 @@ func (file *File) getDateTimeRepresentation(field *Field, _ bool) ([]byte, error
 		}
 		t = parsedTime
 	}
+	if t.IsZero() {
+		return make([]byte, field.column.Length), nil
+	}
 	raw := make([]byte, 8)
 	i := julianDate(t.Year(), int(t.Month()), t.Day())
 	date, err := toBinary(uint64(i))
@@ -482,6 +486,12 @@ func (file *File) getNumericRepresentation(field *Field, skipSpacing bool) ([]by
 	case int32:
 		bin = []byte(strconv.FormatInt(int64(v), 10))
 
+	case int16:
+		bin = []byte(strconv.FormatInt(int64(v), 10))
+
+	case int8:
+		bin = []byte(strconv.FormatInt(int64(v), 10))
+
 	case int:
 		bin = []byte(strconv.FormatInt(int64(v), 10))
 
@@ -491,12 +501,21 @@ func (file *File) getNumericRepresentation(field *Field, skipSpacing bool) ([]by
 	case uint32:
 		bin = []byte(strconv.FormatUint(uint64(v), 10))
 
+	case uint16:
+		bin = []byte(strconv.FormatUint(uint64(v), 10))
+
+	case uint8:
+		bin = []byte(strconv.FormatUint(uint64(v), 10))
+
 	case uint:
 		bin = []byte(strconv.FormatUint(uint64(v), 10))
 
+	case *big.Int:
+		bin = []byte(v.String())
+
 	default:
 		return nil, NewErrorf(
-			"invalid data type %T, expected int32/int64, uint/uint32/uint64 or float32/float64 at column field: %v",
+			"invalid data type %T, expected int32, int64, uint, uint32, uint64, float32 or float64 at column field: %v",
 			field.value, field.Name(),
 		)
 	}

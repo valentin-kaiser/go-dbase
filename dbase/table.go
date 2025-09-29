@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"encoding/json"
 	"errors"
+	"math/big"
 	"reflect"
 	"strings"
 	"sync"
@@ -456,7 +457,39 @@ func (c *Column) Type() string {
 }
 
 func (c *Column) Reflect() (reflect.Type, error) {
-	return DataType(c.DataType).Reflect()
+	switch DataType(c.DataType) {
+	case Character, Memo, Varchar:
+		return reflect.TypeOf(""), nil
+	case Currency, Double, Float, Numeric:
+		if c.Decimals > 0 {
+			return reflect.TypeOf(float64(0)), nil
+		}
+
+		if c.Length == 1 {
+			return reflect.TypeOf(int8(0)), nil
+		}
+		if c.Length <= 4 {
+			return reflect.TypeOf(int16(0)), nil
+		}
+		if c.Length <= 9 {
+			return reflect.TypeOf(int32(0)), nil
+		}
+		if c.Length <= 18 {
+			return reflect.TypeOf(int64(0)), nil
+		}
+
+		return reflect.TypeOf(&big.Int{}), nil
+	case Date, DateTime:
+		return reflect.TypeOf(time.Time{}), nil
+	case Integer:
+		return reflect.TypeOf(int32(0)), nil
+	case Logical:
+		return reflect.TypeOf(false), nil
+	case Blob, Varbinary, General, Picture:
+		return reflect.TypeOf([]byte{}), nil
+	default:
+		return nil, ErrUnknownDataType
+	}
 }
 
 // SetValue allows to change the field value

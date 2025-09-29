@@ -2,8 +2,6 @@ package dbase
 
 import (
 	"math"
-	"reflect"
-	"time"
 )
 
 // Supported and testet file versions - other files may work but are not tested
@@ -116,25 +114,6 @@ const (
 // Returns the type of the column as string
 func (t DataType) String() string {
 	return string(t)
-}
-
-func (t DataType) Reflect() (reflect.Type, error) {
-	switch t {
-	case Character:
-		return reflect.TypeOf(""), nil
-	case Currency, Double, Float, Numeric:
-		return reflect.TypeOf(float64(0)), nil
-	case Date, DateTime:
-		return reflect.TypeOf(time.Time{}), nil
-	case Integer:
-		return reflect.TypeOf(int32(0)), nil
-	case Logical:
-		return reflect.TypeOf(false), nil
-	case Memo, Blob, Varchar, Varbinary, General, Picture:
-		return reflect.TypeOf([]byte{}), nil
-	default:
-		return nil, ErrUnknownDataType
-	}
 }
 
 // nullFlagColumn is a reserved column name that is placed at the end of the column list
