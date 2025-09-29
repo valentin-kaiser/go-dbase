@@ -100,7 +100,7 @@ func main() {
 	output = append(output, "\n\n## Columns\n\n")
 	for _, info := range tableInfos {
 		output = append(output, fmt.Sprintf("\n### %v\n\n", info.Name))
-		output = append(output, "| Column | Type | Length | Comment |\n|---|---|---|---|\n")
+		output = append(output, "| Name | Type | Golang type | Length | Comment |\n|---|---|---|---|---|\n")
 		for _, column := range info.ColumnsInfo {
 			output = append(output, column.String())
 		}
@@ -128,9 +128,10 @@ func (t TableInfo) String() string {
 
 func (c ColumnInfo) String() string {
 	return fmt.Sprintf(
-		"| %v | %v | %v | %v |\n",
+		"| %v | %v | %v | %v | %v |\n",
 		c.Name,
 		c.Type,
+		c.GolangType,
 		c.Length,
 		c.Comment,
 	)
