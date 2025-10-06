@@ -34,7 +34,7 @@ type Column struct {
 	Position  uint32   // Displacement of column in row
 	Length    uint8    // Length of column (in bytes)
 	Decimals  uint8    // Number of decimal places
-	Flag      byte     // Column flag
+	Flag      Flag     // Column flag
 	Next      uint32   // Value of autoincrement Next value
 	Step      uint8    // Value of autoincrement Step value
 	Reserved  [8]byte  // Reserved
@@ -55,7 +55,7 @@ func (table *Table) nullFlagPosition(column *Column) int {
 			break
 		}
 		bitCount++
-		if c.Flag == byte(NullableFlag) || c.Flag == byte(NullableFlag|BinaryFlag) {
+		if c.Flag.Has(byte(NullableFlag)) {
 			bitCount++
 		}
 	}
@@ -338,7 +338,7 @@ func (row *Row) ToBytes() ([]byte, error) {
 			}
 			// Increase variable field in nullFlag position, increase by one for length and another one for null flag
 			varPos++
-			if field.column.Flag == byte(NullableFlag) || field.column.Flag == byte(NullableFlag|BinaryFlag) {
+			if field.column.Flag.Has(byte(NullableFlag)) {
 				varPos++
 			}
 		}
@@ -530,7 +530,7 @@ func NewTable(version FileVersion, config *Config, columns []*Column, memoBlockS
 		}
 		if column.DataType == byte(Varchar) || column.DataType == byte(Varbinary) {
 			nullFlagLength++
-			if column.Flag == byte(NullableFlag) || column.Flag == byte(NullableFlag|BinaryFlag) {
+			if column.Flag.Has(byte(NullableFlag)) {
 				nullFlagLength++
 			}
 		}
@@ -566,7 +566,7 @@ func NewTable(version FileVersion, config *Config, columns []*Column, memoBlockS
 			Position:  uint32(file.header.RowLength),
 			Length:    uint8(length),
 			Decimals:  0,
-			Flag:      byte(HiddenFlag + NullableFlag),
+			Flag:      Flag(HiddenFlag | NullableFlag),
 			Next:      0x00,
 			Step:      0x00,
 			Reserved:  [8]byte{},
@@ -609,12 +609,12 @@ func NewColumn(name string, dataType DataType, length uint8, decimals uint8, nul
 	debugf("Creating new column: %v - type: %v - length: %v - decimals: %v - nullable: %v - position: %v - flag: %v", name, dataType, length, decimals, nullable, column.Position, column.Flag)
 	// Set the appropriate flag for nullable fields
 	if nullable {
-		column.Flag = byte(NullableFlag)
+		column.Flag = Flag(NullableFlag)
 	}
 	// Check for data type to specify the length
 	switch dataType {
 	case Varbinary:
-		column.Flag |= byte(BinaryFlag)
+		column.Flag |= Flag(BinaryFlag)
 		fallthrough
 	case Varchar, Character:
 		if length == 0 || length > MaxCharacterLength {
@@ -648,7 +648,7 @@ func (row *Row) Write() error {
 // Rewrites the columns header
 func (row *Row) Increment() error {
 	for _, field := range row.fields {
-		if field.column.Flag == byte(AutoincrementFlag) {
+		if field.column.Flag.Has(byte(AutoincrementFlag)) {
 			field.value = int32(field.column.Next)
 			field.column.Next += uint32(field.column.Step)
 			debugf("Incrementing autoincrement field %s to %v (Step: %v)", field.column.Name(), field.value, field.column.Step)

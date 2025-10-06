@@ -357,7 +357,7 @@ func (u UnixIO) ReadNullFlag(file *File, rowPosition uint64, column *Column) (bo
 		return false, false, NewErrorf("read %d bytes, expected %d", n, file.nullFlagColumn.Length)
 	}
 
-	if column.Flag == byte(NullableFlag) || column.Flag == byte(NullableFlag|BinaryFlag) {
+	if column.Flag.Has(byte(NullableFlag)) {
 		debugf("Read _NullFlag for column %s => varlength: %v - null: %v", column.Name(), getNthBit(buf, nullFlagPosition), getNthBit(buf, nullFlagPosition+1))
 		return getNthBit(buf, nullFlagPosition), getNthBit(buf, nullFlagPosition+1), nil
 	}
@@ -391,7 +391,7 @@ func (u UnixIO) ReadMemoHeader(file *File) error {
 	return nil
 }
 
-func (u UnixIO) ReadMemo(file *File, blockdata []byte) ([]byte, bool, error) {
+func (u UnixIO) ReadMemo(file *File, blockdata []byte, column *Column) ([]byte, bool, error) {
 	relatedHandle, err := u.getRelatedHandle(file)
 	if err != nil {
 		return nil, false, WrapError(err)
@@ -429,7 +429,7 @@ func (u UnixIO) ReadMemo(file *File, blockdata []byte) ([]byte, bool, error) {
 	if read != int(leng) {
 		return buf, sign == 1, NewErrorf("read %d bytes, expected %d", read, leng)
 	}
-	if sign == 1 {
+	if sign == 1 || !column.Flag.Has(byte(BinaryFlag)) {
 		buf, err = file.config.Converter.Decode(buf)
 		if err != nil {
 			return buf, sign == 1, WrapError(err)

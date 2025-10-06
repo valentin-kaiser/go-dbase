@@ -72,14 +72,24 @@ func (t TableFlag) Defined(flag byte) bool {
 	return t&TableFlag(flag) == t
 }
 
+type Flag byte
+
+func (f Flag) Has(mask byte) bool {
+	return byte(f)&mask != 0
+}
+
+func (f Flag) HasAll(mask byte) bool {
+	return byte(f)&mask == mask
+}
+
 // Column flags indicate wether a column is hidden, can be null, is binary or is autoincremented
 type ColumnFlag byte
 
 const (
 	HiddenFlag        ColumnFlag = 0x01
 	NullableFlag      ColumnFlag = 0x02
-	BinaryFlag        ColumnFlag = 0x04
-	AutoincrementFlag ColumnFlag = 0x0C
+	BinaryFlag        ColumnFlag = 0x04 // NOCPTRANS
+	AutoincrementFlag ColumnFlag = 0x08
 )
 
 // DataType defines the possible types of a column
