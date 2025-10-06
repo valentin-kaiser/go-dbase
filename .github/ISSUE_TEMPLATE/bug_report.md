@@ -17,7 +17,7 @@ package main
 
 import (
     "fmt"
-    "github.com/Valentin-Kaiser/go-dbase"
+    "github.com/valentin-kaiser/go-dbase"
 )
 
 func main() {

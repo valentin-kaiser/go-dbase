@@ -5,7 +5,7 @@ import (
 	"io"
 	"os"
 
-	"github.com/Valentin-Kaiser/go-dbase/dbase"
+	"github.com/valentin-kaiser/go-dbase/dbase"
 	"golang.org/x/text/encoding/charmap"
 )
 
