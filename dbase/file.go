@@ -23,41 +23,42 @@ type File struct {
 	isNew          bool
 }
 
+// TableName returns the name of the dBase table.
 func (file *File) TableName() string {
 	return file.table.name
 }
 
-// Returns if the internal row pointer is at end of file
+// EOF returns true if the internal row pointer is at the end of file.
 func (file *File) EOF() bool {
 	return file.table.rowPointer >= file.header.RowsCount
 }
 
-// Returns if the internal row pointer is before first row
+// BOF returns true if the internal row pointer is before the first row.
 func (file *File) BOF() bool {
 	return file.table.rowPointer == 0
 }
 
-// Returns the current row pointer position
+// Pointer returns the current row pointer position.
 func (file *File) Pointer() uint32 {
 	return file.table.rowPointer
 }
 
-// Returns the dBase table file header struct for inspecting
+// Header returns the dBase file header struct for inspection.
 func (file *File) Header() *Header {
 	return file.header
 }
 
-// returns the number of rows
+// RowsCount returns the number of rows in the dBase file.
 func (file *File) RowsCount() uint32 {
 	return file.header.RowsCount
 }
 
-// Returns all columns
+// Columns returns all columns in the dBase table.
 func (file *File) Columns() []*Column {
 	return file.table.columns
 }
 
-// Returns the requested column
+// Column returns the column at the specified position, or nil if the position is invalid.
 func (file *File) Column(pos int) *Column {
 	if pos < 0 || pos >= len(file.table.columns) {
 		return nil
@@ -65,12 +66,12 @@ func (file *File) Column(pos int) *Column {
 	return file.table.columns[pos]
 }
 
-// Returns the number of columns
+// ColumnsCount returns the number of columns in the dBase table.
 func (file *File) ColumnsCount() uint16 {
 	return uint16(len(file.table.columns))
 }
 
-// Returns a slice of all the column names
+// ColumnNames returns a slice containing all column names in the dBase table.
 func (file *File) ColumnNames() []string {
 	num := len(file.table.columns)
 	names := make([]string, num)
@@ -80,7 +81,7 @@ func (file *File) ColumnNames() []string {
 	return names
 }
 
-// Returns the column position of a column by name or -1 if not found.
+// ColumnPosByName returns the position of a column by name, or -1 if not found.
 func (file *File) ColumnPosByName(colname string) int {
 	for i := 0; i < len(file.table.columns); i++ {
 		if file.table.columns[i].Name() == colname {
@@ -90,7 +91,7 @@ func (file *File) ColumnPosByName(colname string) int {
 	return -1
 }
 
-// Returns the column position of a column or -1 if not found.
+// ColumnPos returns the position of the specified column, or -1 if not found.
 func (file *File) ColumnPos(column *Column) int {
 	for i := 0; i < len(file.table.columns); i++ {
 		if file.table.columns[i] == column {
@@ -100,7 +101,8 @@ func (file *File) ColumnPos(column *Column) int {
 	return -1
 }
 
-// SetColumnModification sets a modification for a column
+// SetColumnModification sets a modification for the column at the specified position.
+// If the position is out of range, the operation is ignored.
 func (file *File) SetColumnModification(position int, mod *Modification) {
 	// Skip if position is out of range
 	if position < 0 || position >= len(file.table.columns) {
@@ -110,6 +112,8 @@ func (file *File) SetColumnModification(position int, mod *Modification) {
 	file.table.mods[position] = mod
 }
 
+// SetColumnModificationByName sets a modification for the column with the specified name.
+// Returns an error if the column is not found.
 func (file *File) SetColumnModificationByName(name string, mod *Modification) error {
 	position := file.ColumnPosByName(name)
 	if position < 0 {
@@ -119,12 +123,12 @@ func (file *File) SetColumnModificationByName(name string, mod *Modification) er
 	return nil
 }
 
-// Returns the column modification for a column at the given position
+// GetColumnModification returns the column modification for the column at the specified position.
 func (file *File) GetColumnModification(position int) *Modification {
 	return file.table.mods[position]
 }
 
-// Write creates the dbase files and writes the header and columns to it
+// Init creates the dBase files and writes the header and columns to them.
 func (file *File) Init() error {
 	err := file.Create()
 	if err != nil {
@@ -148,7 +152,9 @@ func (file *File) Init() error {
 	return nil
 }
 
-// Returns all rows as a slice
+// Rows returns all rows in the dBase file as a slice.
+// If skipInvalid is true, invalid rows are skipped instead of returning an error.
+// If skipDeleted is true, deleted rows are excluded from the result.
 func (file *File) Rows(skipInvalid bool, skipDeleted bool) ([]*Row, error) {
 	rows := make([]*Row, 0)
 	for !file.EOF() {
@@ -169,7 +175,7 @@ func (file *File) Rows(skipInvalid bool, skipDeleted bool) ([]*Row, error) {
 	return rows, nil
 }
 
-// Reads the row and increments the row pointer by one
+// Next reads the current row and increments the row pointer by one.
 func (file *File) Next() (*Row, error) {
 	row, err := file.Row()
 	file.Skip(1)
@@ -179,7 +185,7 @@ func (file *File) Next() (*Row, error) {
 	return row, err
 }
 
-// Returns the requested row at file.rowPointer.
+// Row returns the row at the current file row pointer position.
 func (file *File) Row() (*Row, error) {
 	data, err := file.ReadRow(file.table.rowPointer)
 	if err != nil {
@@ -188,7 +194,8 @@ func (file *File) Row() (*Row, error) {
 	return file.BytesToRow(data)
 }
 
-// Returns a new Row struct with the same column structure as the dbf and the next row pointer
+// NewRow creates a new Row struct with the same column structure as the dBase file.
+// The row is positioned at the next available row position.
 func (file *File) NewRow() *Row {
 	row := &Row{
 		handle:   file,
@@ -206,7 +213,8 @@ func (file *File) NewRow() *Row {
 	return row
 }
 
-// Creates a new field with the given value and column
+// NewField creates a new field with the specified value and column at the given position.
+// Returns an error if the column position is invalid.
 func (file *File) NewField(pos int, value interface{}) (*Field, error) {
 	column := file.Column(pos)
 	if column == nil {
@@ -215,7 +223,8 @@ func (file *File) NewField(pos int, value interface{}) (*Field, error) {
 	return &Field{column: column, value: value}, nil
 }
 
-// Creates a new field with the given value and column specified by name
+// NewFieldByName creates a new field with the specified value and column identified by name.
+// Returns an error if the column is not found.
 func (file *File) NewFieldByName(name string, value interface{}) (*Field, error) {
 	pos := file.ColumnPosByName(name)
 	if pos < 0 {
@@ -224,8 +233,8 @@ func (file *File) NewFieldByName(name string, value interface{}) (*Field, error)
 	return file.NewField(pos, value)
 }
 
-// Converts raw row data to a Row struct
-// If the data points to a memo (FPT) file this file is also read
+// BytesToRow converts raw row data to a Row struct.
+// If the data references a memo (FPT) file, that file is also read.
 func (file *File) BytesToRow(data []byte) (*Row, error) {
 	debugf("Converting row data (%d bytes) to row struct...", len(data))
 	rec := &Row{}

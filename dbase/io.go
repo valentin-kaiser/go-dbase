@@ -1,10 +1,11 @@
 package dbase
 
-// IO is the interface to work with the DBF file.
+// IO is the interface for working with dBase files.
+// It provides methods for opening, reading, writing, and managing dBase database files and their memo files.
 // Three implementations are available:
-// - WindowsIO (for direct file access with Windows)
-// - UnixIO (for direct file access with Unix)
-// - GenericIO (for any custom file access implementing io.ReadWriteSeeker)
+// - WindowsIO (for direct file access on Windows)
+// - UnixIO (for direct file access on Unix-like systems)
+// - GenericIO (for custom file access implementing io.ReadWriteSeeker)
 type IO interface {
 	OpenTable(config *Config) (*File, error)
 	Close(file *File) error
@@ -26,9 +27,9 @@ type IO interface {
 	Deleted(file *File) (bool, error)
 }
 
-// Opens a dBase database file (and the memo file if needed).
-// The config parameter is required to specify the file path, encoding, file handles (IO) and others.
-// If IO is nil, the default implementation is used depending on the OS.
+// OpenTable opens a dBase database file (and the memo file if needed).
+// The config parameter is required to specify the file path, encoding, file handles (IO) and other options.
+// If config.IO is nil, the default implementation is used depending on the operating system.
 func OpenTable(config *Config) (*File, error) {
 	if config.IO == nil {
 		config.IO = DefaultIO
@@ -36,108 +37,110 @@ func OpenTable(config *Config) (*File, error) {
 	return config.IO.OpenTable(config)
 }
 
-// Closes all file handlers.
+// Close closes all file handlers for the dBase file and its associated memo file.
 func (file *File) Close() error {
 	return file.defaults().io.Close(file)
 }
 
-// Creates a new dBase database file (and the memo file if needed).
+// Create creates a new dBase database file (and the memo file if needed).
 func (file *File) Create() error {
 	file.isNew = true
 	return file.defaults().io.Create(file)
 }
 
-// Reads the DBF header from the file handle.
+// ReadHeader reads the dBase file header from the file handle.
 func (file *File) ReadHeader() error {
 	return file.defaults().io.ReadHeader(file)
 }
 
-// WriteHeader writes the header to the dbase file.
+// WriteHeader writes the header to the dBase file.
 func (file *File) WriteHeader() error {
 	return file.defaults().io.WriteHeader(file)
 }
 
-// ReadColumns reads from DBF header, starting at pos 32, until it finds the Header row terminator END_OF_COLUMN(0x0D).
+// ReadColumns reads column definitions from the dBase file header, starting at position 32,
+// until it finds the header row terminator END_OF_COLUMN (0x0D).
 func (file *File) ReadColumns() ([]*Column, *Column, error) {
 	return file.defaults().io.ReadColumns(file)
 }
 
-// WriteColumns writes the columns at the end of header in dbase file
+// WriteColumns writes the column definitions to the end of the header in the dBase file.
 func (file *File) WriteColumns() error {
 	return file.defaults().io.WriteColumns(file)
 }
 
-// ReadMemoHeader reads the memo header from the given file handle.
+// ReadMemoHeader reads the memo file header from the given file handle.
 func (file *File) ReadMemoHeader() error {
 	return file.defaults().io.ReadMemoHeader(file)
 }
 
 // WriteMemoHeader writes the memo header to the memo file.
-// Size is the number of blocks the new memo data will take up.
+// The size parameter specifies the number of blocks the new memo data will occupy.
 func (file *File) WriteMemoHeader(size int) error {
 	return file.defaults().io.WriteMemoHeader(file, size)
 }
 
-// Reads raw row data of one row at rowPosition
+// ReadRow reads the raw row data of one row at the specified row position.
 func (file *File) ReadRow(position uint32) ([]byte, error) {
 	return file.defaults().io.ReadRow(file, position)
 }
 
-// WriteRow writes a raw row data to the given row position
+// WriteRow writes the raw row data to the specified row position in the dBase file.
 func (file *File) WriteRow(row *Row) error {
 	return file.defaults().io.WriteRow(file, row)
 }
 
-// Reads one or more blocks from the FPT file, called for each memo column.
-// the return value is the raw data and true if the data read is text (false is RAW binary data).
+// ReadMemo reads one or more blocks from the memo file for the specified memo column.
+// Returns the raw data and a boolean indicating if the data is text (true) or binary (false).
 func (file *File) ReadMemo(address []byte, column *Column) ([]byte, bool, error) {
 	return file.defaults().io.ReadMemo(file, address, column)
 }
 
-// WriteMemo writes a memo to the memo file and returns the address of the memo.
+// WriteMemo writes memo data to the memo file and returns the address of the memo.
+// The text parameter indicates whether the data is text (true) or binary (false).
+// The length parameter specifies the length of the data to write.
 func (file *File) WriteMemo(address []byte, data []byte, text bool, length int) ([]byte, error) {
 	return file.defaults().io.WriteMemo(address, file, data, text, length)
 }
 
-// Read the nullFlag field at the end of the row
-// The nullFlag field indicates if the field has a variable length
-// If varlength is true, the field is variable length and the length is stored in the last byte
-// If varlength is false, we read the complete field
-// If the field is null, we return true as second return value
+// ReadNullFlag reads the null flag field at the end of the row.
+// The null flag field indicates if the field has a variable length.
+// Returns true as the first value if the field is variable length, and true as the second value if the field is null.
 func (file *File) ReadNullFlag(position uint64, column *Column) (bool, bool, error) {
 	return file.defaults().io.ReadNullFlag(file, position, column)
 }
 
-// Search searches for a row with the given value in the given field
+// Search searches for rows that contain the specified value in the given field.
+// If exactMatch is true, only exact matches are returned; otherwise, partial matches are included.
 func (file *File) Search(field *Field, exactMatch bool) ([]*Row, error) {
 	return file.defaults().io.Search(file, field, exactMatch)
 }
 
-// GoTo sets the internal row pointer to row rowNumber
-// Returns and EOF error if at EOF and positions the pointer at lastRow+1
+// GoTo sets the internal row pointer to the specified row number.
+// Returns an EOF error if positioning beyond the end of file and positions the pointer at lastRow+1.
 func (file *File) GoTo(row uint32) error {
 	return file.defaults().io.GoTo(file, row)
 }
 
-// Skip adds offset to the internal row pointer
-// If at end of file positions the pointer at lastRow+1
-// If the row pointer would be become negative positions the pointer at 0
-// Does not skip deleted rows
+// Skip adds the specified offset to the internal row pointer.
+// If the result would position beyond the end of file, positions the pointer at lastRow+1.
+// If the result would be negative, positions the pointer at 0.
+// Note: This method does not skip deleted rows automatically.
 func (file *File) Skip(offset int64) {
 	file.defaults().io.Skip(file, offset)
 }
 
-// Returns if the row at internal row pointer is deleted
+// Deleted returns true if the row at the current internal row pointer position is marked as deleted.
 func (file *File) Deleted() (bool, error) {
 	return file.defaults().io.Deleted(file)
 }
 
-// Returns the used IO implementation
+// GetIO returns the IO implementation currently being used by this file.
 func (file *File) GetIO() IO {
 	return file.io
 }
 
-// Returns the used file handle (DBF,FPT)
+// GetHandle returns the file handles being used (dBase file handle, memo file handle).
 func (file *File) GetHandle() (interface{}, interface{}) {
 	return file.handle, file.relatedHandle
 }
@@ -150,7 +153,8 @@ func (file *File) defaults() *File {
 	return file
 }
 
-// Check if the file version is tested
+// ValidateFileVersion checks if the dBase file version is supported and tested.
+// If untested is true, validation is bypassed and any version is accepted.
 func ValidateFileVersion(version byte, untested bool) error {
 	if untested {
 		return nil

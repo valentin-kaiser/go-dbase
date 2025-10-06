@@ -458,7 +458,6 @@ func (file *File) parseNumeric(raw []byte, column *Column) (interface{}, error) 
 	return file.parseFloat(raw, column)
 }
 
-// Get the integer or float value as byte representation (supports int32/int64 and float32/float64).
 // Get the integer or float value as byte representation (supports int32/int64, uint/uint32/uint64, float32/float64).
 func (file *File) getNumericRepresentation(field *Field, skipSpacing bool) ([]byte, error) {
 	var bin []byte

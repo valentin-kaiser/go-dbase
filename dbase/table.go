@@ -64,7 +64,8 @@ func (table *Table) nullFlagPosition(column *Column) int {
 	return bitCount
 }
 
-// Returns all values of a row as a slice of interface{}
+// Values returns all values of a row as a slice of interface{}.
+// Fields with nil values are included in the result.
 func (row *Row) Values() []interface{} {
 	values := make([]interface{}, 0)
 	for _, field := range row.fields {
@@ -75,12 +76,14 @@ func (row *Row) Values() []interface{} {
 	return values
 }
 
-// Returns the value of a row at the given position
+// Value returns the value of a row at the specified position.
+// Panics if the position is out of bounds.
 func (row *Row) Value(pos int) interface{} {
 	return row.fields[pos].value
 }
 
-// Returns the value of a row at the given column name
+// ValueByName returns the value of a row for the column with the specified name.
+// Returns an error if the column is not found.
 func (row *Row) ValueByName(name string) (interface{}, error) {
 	pos := row.handle.ColumnPosByName(name)
 	if pos < 0 {
@@ -89,8 +92,8 @@ func (row *Row) ValueByName(name string) (interface{}, error) {
 	return row.Value(pos), nil
 }
 
-// Returns the value of a row at the given column name
-// MustValueByName panics if the value is not found
+// MustValueByName returns the value of a row for the column with the specified name.
+// Panics if the column is not found.
 func (row *Row) MustValueByName(name string) interface{} {
 	val, err := row.ValueByName(name)
 	if err != nil {
@@ -99,8 +102,9 @@ func (row *Row) MustValueByName(name string) interface{} {
 	return val
 }
 
-// Returns the value of a row at the given column name as a string
-// If the value is neither a string nor a byte slice, an error is returned
+// StringValueByName returns the value of a row for the specified column name as a string.
+// If the value is a byte slice, it is converted to a string.
+// Returns an error if the column is not found or the value is not a string or byte slice.
 func (row *Row) StringValueByName(name string) (string, error) {
 	val, err := row.ValueByName(name)
 	if err != nil {
@@ -120,8 +124,8 @@ func (row *Row) StringValueByName(name string) (string, error) {
 	return "", nil
 }
 
-// Returns the value of a row at the given column name as a string
-// MustStringValueByName panics if the value is not found or not a string
+// MustStringValueByName returns the value of a row for the specified column name as a string.
+// Panics if the column is not found or the value is not a string or byte slice.
 func (row *Row) MustStringValueByName(name string) string {
 	val, err := row.StringValueByName(name)
 	if err != nil {
@@ -130,8 +134,8 @@ func (row *Row) MustStringValueByName(name string) string {
 	return val
 }
 
-// Returns the value of a row at the given column name as an int64
-// If the value is not castable to an int64, an error is returned
+// IntValueByName returns the value of a row for the specified column name as an int64.
+// The value will be cast to int64 if possible. Returns an error if the column is not found or the value cannot be cast to int64.
 func (row *Row) IntValueByName(name string) (int64, error) {
 	val, err := row.ValueByName(name)
 	if err != nil {
@@ -446,16 +450,19 @@ func (row *Row) ToStruct(v interface{}) error {
 	return nil
 }
 
-// Returns the name of the column as a trimmed string (max length 10)
+// Name returns the name of the column as a trimmed string (maximum length 10).
+// Null bytes are trimmed from the end of the name.
 func (c *Column) Name() string {
 	return string(bytes.TrimRight(c.FieldName[:], "\x00"))
 }
 
-// Returns the type of the column as string (length 1)
+// Type returns the data type of the column as a single character string.
 func (c *Column) Type() string {
 	return string(c.DataType)
 }
 
+// Reflect returns the Go type that corresponds to the column's data type.
+// This is useful for determining the expected Go type when working with column values.
 func (c *Column) Reflect() (reflect.Type, error) {
 	switch DataType(c.DataType) {
 	case Character, Memo, Varchar:
@@ -465,6 +472,8 @@ func (c *Column) Reflect() (reflect.Type, error) {
 			return reflect.TypeOf(float64(0)), nil
 		}
 
+		// Choose the smallest possible integer type based on the length of the field
+		// Each byte hold one digit, so length 1-4 = int16, 5-9 = int32, 10-18 = int64, >18 = big.Int
 		if c.Length == 1 {
 			return reflect.TypeOf(int8(0)), nil
 		}
@@ -521,8 +530,12 @@ func (field Field) Column() *Column {
 	return field.column
 }
 
-// Create a new DBF file with the specified version, configuration and columns
-// Please only use this for development and testing purposes and dont build new applications with it
+// NewTable creates a new dBase file with the specified version, configuration, and columns.
+// The memoBlockSize parameter specifies the block size for memo files (use 0 for default).
+// The io parameter specifies the IO implementation to use (use nil for default).
+//
+// Note: This function is intended for development and testing purposes.
+// Consider using established dBase tools for production applications.
 func NewTable(version FileVersion, config *Config, columns []*Column, memoBlockSize uint16, io IO) (*File, error) {
 	if len(columns) == 0 {
 		return nil, errors.New("no columns specified")
@@ -621,8 +634,11 @@ func NewTable(version FileVersion, config *Config, columns []*Column, memoBlockS
 	return file, nil
 }
 
-// Create a new column with the specified name, data type, length, decimals and nullable flag
-// The length is only used for character, varbinary, varchar, numeric and float data types
+// NewColumn creates a new column with the specified properties.
+// The name must be between 1 and 10 characters long.
+// The length parameter is only used for character, varbinary, varchar, numeric, and float data types.
+// The decimals parameter specifies the number of decimal places for numeric and float types.
+// The nullable parameter indicates whether the column can contain null values.
 func NewColumn(name string, dataType DataType, length uint8, decimals uint8, nullable bool) (*Column, error) {
 	if len(name) == 0 || len(name) > MaxColumnNameLength {
 		return nil, NewErrorf("column name must be between 1 and 10 characters long")

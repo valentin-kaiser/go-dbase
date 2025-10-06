@@ -24,9 +24,9 @@ type MemoHeader struct {
 	BlockSize uint16  // Block size (bytes per block)
 }
 
-// Parses the year, month and day to time.Time.
-// The year is stored in decades (2 digits) and added to the base century (2000).
-// Note: we assume the year is between 2000 and 2099 as default.
+// Modified parses the year, month and day stored in the header to time.Time.
+// The year is stored in decades (2 digits) and added to the base century.
+// If base is 0, the default base century 2000 is used (years 2000-2099).
 func (h *Header) Modified(base int) time.Time {
 	if base == 0 {
 		base = 2000
@@ -34,18 +34,18 @@ func (h *Header) Modified(base int) time.Time {
 	return time.Date(base+int(h.Year), time.Month(h.Month), int(h.Day), 0, 0, 0, 0, time.Local)
 }
 
-// Returns the calculated number of columns from the header info alone (without the need to read the columninfo from the header).
-// This is the fastest way to determine the number of rows in the file.
+// ColumnsCount returns the calculated number of columns from the header information alone.
+// This is the fastest way to determine the number of columns without reading the column definitions.
 func (h *Header) ColumnsCount() uint16 {
 	return (h.FirstRow - 296) / 32
 }
 
-// Returns the amount of records in the table
+// RecordsCount returns the number of records (rows) in the dBase table.
 func (h *Header) RecordsCount() uint32 {
 	return h.RowsCount
 }
 
-// Returns the calculated file size based on the header info
+// FileSize returns the calculated file size in bytes based on the header information.
 func (h *Header) FileSize() int64 {
 	return 296 + int64(h.ColumnsCount()*32) + int64(h.RowsCount*uint32(h.RowLength))
 }
