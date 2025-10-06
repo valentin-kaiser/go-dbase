@@ -4,13 +4,13 @@
 
 # Microsoft Visual FoxPro / dBase Library for Go
 
-[![GoDoc](https://godoc.org/github.com/golang/gddo?status.svg)](http://godoc.org/github.com/Valentin-Kaiser/go-dbase)
-[![License](https://img.shields.io/badge/License-BSD_3--Clause-blue.svg)](https://github.com/Valentin-Kaiser/go-dbase/blob/main/LICENSE)
-[![Tests](https://github.com/Valentin-Kaiser/go-dbase/workflows/Tests/badge.svg)](https://github.com/Valentin-Kaiser/go-dbase)
-[![Linters](https://github.com/Valentin-Kaiser/go-dbase/workflows/Linters/badge.svg)](https://github.com/Valentin-Kaiser/go-dbase)
-[![CodeQL](https://github.com/Valentin-Kaiser/go-dbase/workflows/CodeQL/badge.svg)](https://github.com/Valentin-Kaiser/go-dbase)
-[![Examples](https://github.com/Valentin-Kaiser/go-dbase/workflows/Examples/badge.svg)](https://github.com/Valentin-Kaiser/go-dbase)
-[![Go Report](https://goreportcard.com/badge/github.com/Valentin-Kaiser/go-dbase)](https://goreportcard.com/report/github.com/Valentin-Kaiser/go-dbase)
+[![GoDoc](https://godoc.org/github.com/golang/gddo?status.svg)](http://godoc.org/github.com/valentin-kaiser/go-dbase)
+[![License](https://img.shields.io/badge/License-BSD_3--Clause-blue.svg)](https://github.com/valentin-kaiser/go-dbase/blob/main/LICENSE)
+[![Tests](https://github.com/valentin-kaiser/go-dbase/workflows/Tests/badge.svg)](https://github.com/valentin-kaiser/go-dbase)
+[![Linters](https://github.com/valentin-kaiser/go-dbase/workflows/Linters/badge.svg)](https://github.com/valentin-kaiser/go-dbase)
+[![CodeQL](https://github.com/valentin-kaiser/go-dbase/workflows/CodeQL/badge.svg)](https://github.com/valentin-kaiser/go-dbase)
+[![Examples](https://github.com/valentin-kaiser/go-dbase/workflows/Examples/badge.svg)](https://github.com/valentin-kaiser/go-dbase)
+[![Go Report](https://goreportcard.com/badge/github.com/valentin-kaiser/go-dbase)](https://goreportcard.com/report/github.com/valentin-kaiser/go-dbase)
 
 **A comprehensive Golang package for reading, writing, and managing FoxPro dBase table and memo files.**
 
@@ -42,7 +42,7 @@ This package provides comprehensive tools for working with dBase-format database
 ### Installation
 
 ```bash
-go get github.com/Valentin-Kaiser/go-dbase@latest
+go get github.com/valentin-kaiser/go-dbase@latest
 ```
 
 ### Basic Usage
@@ -54,7 +54,7 @@ import (
     "fmt"
     "log"
 
-    "github.com/Valentin-Kaiser/go-dbase/dbase"
+    "github.com/valentin-kaiser/go-dbase/dbase"
 )
 
 func main() {
@@ -98,7 +98,7 @@ func main() {
 
 Comparison with other popular Go dBase libraries:
 
-| Feature | [go-dbase](https://github.com/Valentin-Kaiser/go-dbase) | [go-dbf](https://github.com/LindsayBradford/go-dbf) | [go-foxpro-dbf](https://github.com/SebastiaanKlippert/go-foxpro-dbf) | 
+| Feature | [go-dbase](https://github.com/valentin-kaiser/go-dbase) | [go-dbf](https://github.com/LindsayBradford/go-dbf) | [go-foxpro-dbf](https://github.com/SebastiaanKlippert/go-foxpro-dbf) | 
 | --- | :---: | :---: | :---: |
 | **File Operations** |
 | Read .DBF files | ✅ | ✅ | ✅ |
@@ -178,7 +178,7 @@ age := row.MustIntValueByName("AGE")
 
 > 📖 **Reference**: [Microsoft Visual Studio FoxPro Data Types](https://learn.microsoft.com/en-us/previous-versions/visualstudio/foxpro/74zkxe2k(v=vs.80))
 
-> **Note**: Need additional column types? Please [open an issue](https://github.com/Valentin-Kaiser/go-dbase/issues) or submit a pull request.
+> **Note**: Need additional column types? Please [open an issue](https://github.com/valentin-kaiser/go-dbase/issues) or submit a pull request.
 
 ## Character Encoding Support
 
