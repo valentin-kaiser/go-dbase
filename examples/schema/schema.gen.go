@@ -4,22 +4,22 @@ import "time"
 
 // Auto generated table struct: employees
 type EMPLOYEES struct {
-	EMPLOYEEID int32   `dbase:"EMPLOYEEID"`
-	DEPARTMENT string  `dbase:"DEPARTMENT"`
-	SOCIALSECU string  `dbase:"SOCIALSECU"`
-	EMPLOYEENU string  `dbase:"EMPLOYEENU"`
-	FIRSTNAME  string  `dbase:"FIRSTNAME"`
-	LASTNAME   string  `dbase:"LASTNAME"`
-	TITLE      string  `dbase:"TITLE"`
-	EMAILNAME  string  `dbase:"EMAILNAME"`
-	EXTENSION  string  `dbase:"EXTENSION"`
-	ADDRESS    []uint8 `dbase:"ADDRESS"`
-	CITY       string  `dbase:"CITY"`
-	STATEORPRO string  `dbase:"STATEORPRO"`
-	POSTALCODE string  `dbase:"POSTALCODE"`
-	COUNTRY    string  `dbase:"COUNTRY"`
-	WORKPHONE  string  `dbase:"WORKPHONE"`
-	NOTES      []uint8 `dbase:"NOTES"`
+	EMPLOYEEID int32  `dbase:"EMPLOYEEID"`
+	DEPARTMENT string `dbase:"DEPARTMENT"`
+	SOCIALSECU string `dbase:"SOCIALSECU"`
+	EMPLOYEENU string `dbase:"EMPLOYEENU"`
+	FIRSTNAME  string `dbase:"FIRSTNAME"`
+	LASTNAME   string `dbase:"LASTNAME"`
+	TITLE      string `dbase:"TITLE"`
+	EMAILNAME  string `dbase:"EMAILNAME"`
+	EXTENSION  string `dbase:"EXTENSION"`
+	ADDRESS    string `dbase:"ADDRESS"`
+	CITY       string `dbase:"CITY"`
+	STATEORPRO string `dbase:"STATEORPRO"`
+	POSTALCODE string `dbase:"POSTALCODE"`
+	COUNTRY    string `dbase:"COUNTRY"`
+	WORKPHONE  string `dbase:"WORKPHONE"`
+	NOTES      string `dbase:"NOTES"`
 }
 
 // Auto generated table struct: expense_categories
@@ -45,7 +45,7 @@ type EXPENSE_REPORTS struct {
 	EMPLOYEEID int32     `dbase:"EMPLOYEEID"`
 	EXPENSETYP string    `dbase:"EXPENSETYP"`
 	EXPENSERPT string    `dbase:"EXPENSERPT"`
-	EXPENSERP2 []uint8   `dbase:"EXPENSERP2"`
+	EXPENSERP2 string    `dbase:"EXPENSERP2"`
 	DATESUBMIT time.Time `dbase:"DATESUBMIT"`
 	ADVANCEAMO float64   `dbase:"ADVANCEAMO"`
 	DEPARTMENT string    `dbase:"DEPARTMENT"`

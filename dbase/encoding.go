@@ -90,6 +90,7 @@ func (c DefaultConverter) CodePage() byte {
 	}
 }
 
+// NewDefaultConverter creates a new DefaultConverter with the specified encoding.
 func NewDefaultConverter(encoding encoding.Encoding) DefaultConverter {
 	return DefaultConverter{encoding: encoding}
 }
@@ -134,6 +135,8 @@ func ConverterFromCodePage(codePageMark byte) DefaultConverter {
 	}
 }
 
+// RegisterCustomEncoding registers a custom encoding for a specific code page mark.
+// This allows support for additional encodings beyond the built-in ones.
 func RegisterCustomEncoding(codePageMark byte, encoding encoding.Encoding) {
 	customEncoding[codePageMark] = encoding
 }

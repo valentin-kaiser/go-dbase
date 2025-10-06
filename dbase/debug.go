@@ -12,8 +12,9 @@ var (
 	errorLogger = log.New(os.Stdout, "[dbase] [ERROR] ", log.LstdFlags)
 )
 
-// Debug the dbase package
-// If debug is true, debug messages will be printed to the defined io.Writter (default: os.Stdout)
+// Debug enables or disables debug logging for the dbase package.
+// If debug is true, debug messages will be printed to the specified io.Writer (default: os.Stdout).
+// If out is nil, the output destination is not changed.
 func Debug(enabled bool, out io.Writer) {
 	if out != nil {
 		debugLogger.SetOutput(out)

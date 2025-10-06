@@ -40,7 +40,7 @@
     "EXPENSERP2": {
       "Name": "EXPENSERP2",
       "Type": "M",
-      "GoType": "[]uint8",
+      "GoType": "string",
       "Length": 4
     },
     "EXPENSERPT": {

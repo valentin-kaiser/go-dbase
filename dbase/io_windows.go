@@ -17,6 +17,7 @@ import (
 	"golang.org/x/sys/windows"
 )
 
+// DefaultIO is the default IO implementation for Windows systems.
 var DefaultIO WindowsIO
 
 // WindowsIO implements the IO interface for Windows systems.

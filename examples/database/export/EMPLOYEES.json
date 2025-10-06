@@ -10,7 +10,7 @@
     "ADDRESS": {
       "Name": "ADDRESS",
       "Type": "M",
-      "GoType": "[]uint8",
+      "GoType": "string",
       "Length": 4
     },
     "CITY": {
@@ -70,7 +70,7 @@
     "NOTES": {
       "Name": "NOTES",
       "Type": "M",
-      "GoType": "[]uint8",
+      "GoType": "string",
       "Length": 4
     },
     "POSTALCODE": {
