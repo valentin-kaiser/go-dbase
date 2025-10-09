@@ -31,19 +31,25 @@ type IO interface {
 
 // OpenTable opens a dBase database file (and the memo file if needed).
 // The config parameter is required to specify either:
-//   - Filename: path to DBF file on filesystem
+//   - IO: custom IO implementation (takes priority if provided)
 //   - Data: DBF file content as bytes (with optional MemoData for FPT content)
 //   - Reader: DBF file content as io.ReadWriteSeeker (with optional MemoReader)
+//   - Filename: path to DBF file on filesystem (fallback option)
 //
-// If config.IO is nil, the default implementation is used depending on the operating system.
+// If no IO is provided, one will be created based on available data sources.
 func OpenTable(config *Config) (*File, error) {
 	if config == nil {
 		return nil, NewError("missing dbase configuration")
 	}
 
-	// Check if we have byte data or readers instead of filesystem files
+	// If custom IO is already provided, use it directly
+	if config.IO != nil {
+		return config.IO.OpenTable(config)
+	}
+
+	// No custom IO provided, so create one based on available data sources
 	if config.Data != nil || config.Reader != nil {
-		// Use GenericIO for byte/reader data
+		// Create GenericIO for byte/reader data
 		var dbfHandle, memoHandle io.ReadWriteSeeker
 
 		if config.Reader != nil {
@@ -65,22 +71,15 @@ func OpenTable(config *Config) (*File, error) {
 			RelatedHandle: memoHandle,
 		}
 
-		// Set a dummy filename for internal processing if not provided
-		if configCopy.Filename == "" {
-			configCopy.Filename = "memory.dbf"
-		}
-
 		return configCopy.IO.OpenTable(&configCopy)
 	}
 
-	// Fall back to filesystem access
+	// Fall back to filesystem access with DefaultIO
 	if config.Filename == "" {
 		return nil, NewError("missing filename, data, or reader in configuration")
 	}
 
-	if config.IO == nil {
-		config.IO = DefaultIO
-	}
+	config.IO = DefaultIO
 	return config.IO.OpenTable(config)
 }
 
