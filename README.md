@@ -58,9 +58,12 @@ import (
 )
 
 func main() {
-    // Open a dBase file
+    // Open a dBase file - you must specify exactly one data source
     config := &dbase.Config{
-        Filename: "example.dbf",
+        Filename: "example.dbf", // Filesystem access
+        // Data: []byte("..."),  // OR byte data  
+        // Reader: someReader,   // OR custom reader
+        // IO: customIO,         // OR custom IO implementation
     }
     
     table, err := dbase.OpenTable(config)
@@ -85,7 +88,7 @@ func main() {
     
     // Convert row to map
     row, _ := table.Row()
-    dataMap := row.ToMap()
+    dataMap, _ := row.ToMap()
     fmt.Printf("Row as map: %+v\n", dataMap)
     
     // Convert row to JSON
@@ -221,6 +224,88 @@ dbase.RegisterCustomEncoding(0x99, charmap.ISO8859_15)
 ```
 
 > All encodings are automatically converted to/from UTF-8 for seamless Go integration.
+
+## Data Source Configuration
+
+The library supports four different data sources, and you must specify exactly one when opening a table:
+
+### 1. Filesystem Access (Filename)
+
+```go
+config := &dbase.Config{
+    Filename: "data.dbf",
+    // Optionally specify other settings
+    TrimSpaces: true,
+}
+```
+
+### 2. Byte Data (Data)
+
+```go
+// Read file into memory
+dbfData, _ := os.ReadFile("data.dbf")
+memoData, _ := os.ReadFile("data.fpt") // Optional memo file
+
+config := &dbase.Config{
+    Data:     dbfData,
+    MemoData: memoData, // Optional
+}
+```
+
+### 3. Reader Interface (Reader)
+
+```go
+// Use file handles
+dbfFile, _ := os.OpenFile("data.dbf", os.O_RDWR, 0644)
+memoFile, _ := os.OpenFile("data.fpt", os.O_RDWR, 0644) // Optional
+
+config := &dbase.Config{
+    Reader:     dbfFile,
+    MemoReader: memoFile, // Optional
+}
+
+// Or use custom readers
+dbfReader := dbase.NewBytesReadWriteSeeker(dbfData)
+config := &dbase.Config{
+    Reader: dbfReader,
+}
+```
+
+### 4. Custom IO (IO)
+
+```go
+config := &dbase.Config{
+    IO: customIOImplementation, // Implement the dbase.IO interface
+}
+```
+
+### Validation
+
+The library validates that exactly one data source is provided:
+
+```go
+// ❌ ERROR: Multiple data sources
+config := &dbase.Config{
+    Filename: "data.dbf",
+    Data:     []byte("..."),  // This will cause an error
+}
+
+// ❌ ERROR: No data source 
+config := &dbase.Config{
+    TrimSpaces: true, // Only settings, no data source
+}
+
+// ✅ VALID: Exactly one data source
+config := &dbase.Config{
+    Filename: "data.dbf",
+}
+```
+
+> **Data Source Selection Guide:**
+> - Use **Filename** for typical file-based operations
+> - Use **Data** for in-memory processing or when data comes from databases/networks
+> - Use **Reader** for custom stream processing or when you need full I/O control
+> - Use **IO** for advanced custom implementations with complex requirements
 
 ## Advanced Examples
 
@@ -375,6 +460,9 @@ Explore comprehensive examples in the [examples](./examples/) directory:
 - 📊 **[Database Export](./examples/database/export.go)** - Converting to modern formats
 - 📋 **[Documentation](./examples/documentation/documentation.go)** - Generating table documentation
 - 🗂️ **[Schema Analysis](./examples/schema/schema.go)** - Analyzing table structures
+- 💾 **[Bytes Data Source](./examples/bytes/bytes.go)** - Working with in-memory byte data
+- 🔌 **[Reader Data Source](./examples/reader/reader.go)** - Using custom io.ReadWriteSeeker implementations
+- 🔧 **[Custom IO](./examples/custom/custom.go)** - Advanced custom data source integration
 
 ## Contributing
 

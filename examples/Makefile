@@ -1,20 +1,26 @@
-all: clean read_table write_table create_table open_table_custom  search_table database_export database_schema  database_documentation
-read_table:
+.PHONY: all clean read write create custom search dexport schema documentation bytes reader
+
+all: clean read write create custom search dexport schema documentation bytes reader
+read:
 	cd read && go run ./read.go
-write_table:
+write:
 	cd write && go run write.go
-create_table:
+create:
 	cd create && go run create.go
-open_table_custom:
+custom:
 	cd custom && go run custom.go
-search_table: 
+search:
 	cd search && go run search.go
-database_export:
+dexport:
 	cd database && go run export.go
-database_schema:
+schema:
 	cd schema && go run schema.go
-database_documentation:
+documentation:
 	cd documentation && go run documentation.go
+bytes:
+	cd bytes && go run bytes.go
+reader:
+	cd reader && go run reader.go
 clean:
 	cd read && rm -f debug.log
 	cd write && rm -f debug.log
@@ -24,3 +30,5 @@ clean:
 	cd database && rm -f debug.log
 	cd schema && rm -f debug.log
 	cd documentation && rm -f debug.log
+	cd bytes && rm -f debug.log
+	cd reader && rm -f debug.log

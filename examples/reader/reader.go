@@ -18,30 +18,35 @@ func main() {
 	}
 	dbase.Debug(true, io.MultiWriter(os.Stdout, f))
 
-	dbfData, err := os.ReadFile("../test_data/table/TEST.DBF")
+	dbfFile, err := os.OpenFile("../test_data/table/TEST.DBF", os.O_RDWR, 0644)
 	if err != nil {
-		log.Fatal("Error reading DBF file:", err)
+		log.Fatal("Error opening DBF file:", err)
 	}
 
-	var memoData []byte
-	memoData, err = os.ReadFile("../test_data/table/TEST.FPT")
+	memoFile, err := os.OpenFile("../test_data/table/TEST.FPT", os.O_RDWR, 0644)
 	if err != nil {
 		fmt.Println("Note: No memo file found, continuing without memo data")
 	}
 
-	// Configure dBase to use byte data instead of filesystem
+	// Configure dBase to use readers instead of filesystem
 	config := &dbase.Config{
-		Data:              dbfData,
-		MemoData:          memoData, // Optional: memo file data
+		Reader:            dbfFile,  // io.ReadWriteSeeker for DBF file
+		MemoReader:        memoFile, // io.ReadWriteSeeker for memo file (optional)
 		TrimSpaces:        true,
 		InterpretCodePage: false,
 	}
 
 	table, err := dbase.OpenTable(config)
 	if err != nil {
-		log.Fatal("Error opening table from bytes:", err)
+		log.Fatal("Error opening table from readers:", err)
 	}
-	defer table.Close()
+	defer func() {
+		table.Close()
+		dbfFile.Close()
+		if memoFile != nil {
+			memoFile.Close()
+		}
+	}()
 
 	fmt.Printf(
 		"Last modified: %v Columns count: %v Record count: %v File size: %v \n",
