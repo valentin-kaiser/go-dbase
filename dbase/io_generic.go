@@ -89,7 +89,7 @@ func (g GenericIO) Close(file *File) error {
 			return NewErrorf("handle is of wrong type %T expected io.Closer", file.handle)
 		}
 
-		debugf("Closing file: %s", file.config.Filename)
+		debugf("Closing DBF handle: %T %s", file.handle, file.config.Filename)
 		err := handle.Close()
 		if err != nil {
 			return NewErrorf("closing DBF failed").Details(err)
@@ -101,7 +101,7 @@ func (g GenericIO) Close(file *File) error {
 			return NewErrorf("handle is of wrong type %T expected io.Closer", file.relatedHandle)
 		}
 
-		debugf("Closing related file: %s", file.config.Filename)
+		debugf("Closing FPT handle: %T %s", file.relatedHandle, file.config.Filename)
 		err := relatedHandle.Close()
 		if err != nil {
 			return NewErrorf("closing FPT failed").Details(err)
