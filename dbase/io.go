@@ -49,16 +49,12 @@ func OpenTable(config *Config) (*File, error) {
 		if config.Reader != nil {
 			dbfHandle = config.Reader
 			memoHandle = config.MemoReader
-		} else if config.Data != nil {
+		}
+
+		if config.Data != nil {
 			dbfHandle = NewBytesReadWriteSeeker(config.Data)
-			if dbfHandle == nil {
-				return nil, NewError("failed to create reader from DBF data")
-			}
 			if config.MemoData != nil {
 				memoHandle = NewBytesReadWriteSeeker(config.MemoData)
-				if memoHandle == nil {
-					return nil, NewError("failed to create reader from memo data")
-				}
 			}
 		}
 

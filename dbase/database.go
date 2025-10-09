@@ -22,11 +22,7 @@ func OpenDatabase(config *Config) (*Database, error) {
 		return nil, NewError("missing dbase configuration")
 	}
 
-	// Check if we have alternative data sources
-	usingAlternativeSource := config.Data != nil || config.Reader != nil
-
-	if !usingAlternativeSource {
-		// Using filesystem - validate filename and extension
+	if !(config.Data != nil || config.Reader != nil) {
 		if len(strings.TrimSpace(config.Filename)) == 0 {
 			return nil, NewError("missing dbase filename")
 		}
@@ -34,8 +30,9 @@ func OpenDatabase(config *Config) (*Database, error) {
 			return nil, NewError("invalid dbase filename").Details(fmt.Errorf("file extension must be %v", DBC))
 		}
 		debugf("Opening database: %v", config.Filename)
-	} else {
-		// Using byte/reader data - ensure providers are available
+	}
+
+	if config.Data != nil || config.Reader != nil {
 		if config.TableProvider == nil && config.TableReaderProvider == nil {
 			return nil, NewError("when using Data or Reader for database, you must provide TableProvider or TableReaderProvider")
 		}
@@ -76,53 +73,17 @@ func OpenDatabase(config *Config) (*Database, error) {
 
 		// Check if we're using byte/reader data sources
 		if config.Data != nil || config.Reader != nil {
-			// Use provider functions to get table data
-			if config.TableProvider != nil {
-				dbfData, memoData, err := config.TableProvider(tableName)
-				if err != nil {
-					return nil, NewErrorf("failed to get data for table %s: %v", tableName, err)
-				}
-				if dbfData == nil {
-					continue // Skip if no data provided
-				}
-
-				tableConfig = &Config{
-					Data:                              dbfData,
-					MemoData:                          memoData,
-					Converter:                         config.Converter,
-					Untested:                          config.Untested,
-					TrimSpaces:                        config.TrimSpaces,
-					DisableConvertFilenameUnderscores: config.DisableConvertFilenameUnderscores,
-					ReadOnly:                          config.ReadOnly,
-					WriteLock:                         config.WriteLock,
-					ValidateCodePage:                  config.ValidateCodePage,
-					InterpretCodePage:                 config.InterpretCodePage,
-				}
-			} else if config.TableReaderProvider != nil {
-				dbfReader, memoReader, err := config.TableReaderProvider(tableName)
-				if err != nil {
-					return nil, NewErrorf("failed to get readers for table %s: %v", tableName, err)
-				}
-				if dbfReader == nil {
-					continue // Skip if no reader provided
-				}
-
-				tableConfig = &Config{
-					Reader:                            dbfReader,
-					MemoReader:                        memoReader,
-					Converter:                         config.Converter,
-					Untested:                          config.Untested,
-					TrimSpaces:                        config.TrimSpaces,
-					DisableConvertFilenameUnderscores: config.DisableConvertFilenameUnderscores,
-					ReadOnly:                          config.ReadOnly,
-					WriteLock:                         config.WriteLock,
-					ValidateCodePage:                  config.ValidateCodePage,
-					InterpretCodePage:                 config.InterpretCodePage,
-				}
-			} else {
-				return nil, NewError("when using Data or Reader for database, you must provide TableProvider or TableReaderProvider")
+			var err error
+			tableConfig, err = buildTableConfig(config, tableName)
+			if err != nil {
+				return nil, err
 			}
-		} else {
+			if tableConfig == nil {
+				continue // Skip if no data/reader provided
+			}
+		}
+
+		if config.Data == nil && config.Reader == nil {
 			// Use filesystem access
 			tablePath := path.Join(filepath.Dir(config.Filename), tableName+string(DBF))
 			// Replace underscores with spaces
@@ -185,4 +146,55 @@ func (db *Database) Schema() map[string][]*Column {
 		schema[name] = table.Columns()
 	}
 	return schema
+}
+
+// buildTableConfig creates a table config using the appropriate provider
+func buildTableConfig(config *Config, tableName string) (*Config, error) {
+	if config.TableProvider != nil {
+		dbfData, memoData, err := config.TableProvider(tableName)
+		if err != nil {
+			return nil, NewErrorf("failed to get data for table %s: %v", tableName, err)
+		}
+		if dbfData == nil {
+			return nil, nil // Skip if no data provided
+		}
+
+		return &Config{
+			Data:                              dbfData,
+			MemoData:                          memoData,
+			Converter:                         config.Converter,
+			Untested:                          config.Untested,
+			TrimSpaces:                        config.TrimSpaces,
+			DisableConvertFilenameUnderscores: config.DisableConvertFilenameUnderscores,
+			ReadOnly:                          config.ReadOnly,
+			WriteLock:                         config.WriteLock,
+			ValidateCodePage:                  config.ValidateCodePage,
+			InterpretCodePage:                 config.InterpretCodePage,
+		}, nil
+	}
+
+	if config.TableReaderProvider != nil {
+		dbfReader, memoReader, err := config.TableReaderProvider(tableName)
+		if err != nil {
+			return nil, NewErrorf("failed to get readers for table %s: %v", tableName, err)
+		}
+		if dbfReader == nil {
+			return nil, nil // Skip if no reader provided
+		}
+
+		return &Config{
+			Reader:                            dbfReader,
+			MemoReader:                        memoReader,
+			Converter:                         config.Converter,
+			Untested:                          config.Untested,
+			TrimSpaces:                        config.TrimSpaces,
+			DisableConvertFilenameUnderscores: config.DisableConvertFilenameUnderscores,
+			ReadOnly:                          config.ReadOnly,
+			WriteLock:                         config.WriteLock,
+			ValidateCodePage:                  config.ValidateCodePage,
+			InterpretCodePage:                 config.InterpretCodePage,
+		}, nil
+	}
+
+	return nil, NewError("when using Data or Reader for database, you must provide TableProvider or TableReaderProvider")
 }
