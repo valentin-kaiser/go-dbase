@@ -301,12 +301,6 @@ config := &dbase.Config{
 }
 ```
 
-> **Data Source Selection Guide:**
-> - Use **Filename** for typical file-based operations
-> - Use **Data** for in-memory processing or when data comes from databases/networks
-> - Use **Reader** for custom stream processing or when you need full I/O control
-> - Use **IO** for advanced custom implementations with complex requirements
-
 ## Advanced Examples
 
 ### Creating a New Table
