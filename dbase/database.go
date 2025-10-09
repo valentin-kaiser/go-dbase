@@ -12,19 +12,36 @@ type Database struct {
 	tables map[string]*File
 }
 
-// OpenDatabase opens a dbase/foxpro database file and all related tables
-// The database file must be a DBC file and the tables must be DBF files and in the same directory as the database
+// OpenDatabase opens a dbase/foxpro database file and all related tables.
+// You can provide either:
+//   - Filename: path to DBC file on filesystem
+//   - Data: DBC file content as bytes (with TableProvider for related tables)
+//   - Reader: DBC file content as io.ReadWriteSeeker (with TableReaderProvider)
 func OpenDatabase(config *Config) (*Database, error) {
 	if config == nil {
 		return nil, NewError("missing dbase configuration")
 	}
-	if len(strings.TrimSpace(config.Filename)) == 0 {
-		return nil, NewError("missing dbase filename")
+
+	// Check if we have alternative data sources
+	usingAlternativeSource := config.Data != nil || config.Reader != nil
+
+	if !usingAlternativeSource {
+		// Using filesystem - validate filename and extension
+		if len(strings.TrimSpace(config.Filename)) == 0 {
+			return nil, NewError("missing dbase filename")
+		}
+		if strings.ToUpper(filepath.Ext(config.Filename)) != string(DBC) {
+			return nil, NewError("invalid dbase filename").Details(fmt.Errorf("file extension must be %v", DBC))
+		}
+		debugf("Opening database: %v", config.Filename)
+	} else {
+		// Using byte/reader data - ensure providers are available
+		if config.TableProvider == nil && config.TableReaderProvider == nil {
+			return nil, NewError("when using Data or Reader for database, you must provide TableProvider or TableReaderProvider")
+		}
+		debugf("Opening database from byte/reader data")
 	}
-	if strings.ToUpper(filepath.Ext(config.Filename)) != string(DBC) {
-		return nil, NewError("invalid dbase filename").Details(fmt.Errorf("file extension must be %v", DBC))
-	}
-	debugf("Opening database: %v", config.Filename)
+
 	databaseTable, err := OpenTable(config)
 	if err != nil {
 		return nil, WrapError(err)
@@ -54,22 +71,76 @@ func OpenDatabase(config *Config) (*Database, error) {
 			continue
 		}
 		debugf("Found table: %v in database", tableName)
-		tablePath := path.Join(filepath.Dir(config.Filename), tableName+string(DBF))
-		// Replace underscores with spaces
-		if !config.DisableConvertFilenameUnderscores {
-			tablePath = path.Join(filepath.Dir(config.Filename), strings.ReplaceAll(tableName, "_", " ")+string(DBF))
-		}
-		tableConfig := &Config{
-			Filename:                          tablePath,
-			Converter:                         config.Converter,
-			Exclusive:                         config.Exclusive,
-			Untested:                          config.Untested,
-			TrimSpaces:                        config.TrimSpaces,
-			DisableConvertFilenameUnderscores: config.DisableConvertFilenameUnderscores,
-			ReadOnly:                          config.ReadOnly,
-			WriteLock:                         config.WriteLock,
-			ValidateCodePage:                  config.ValidateCodePage,
-			InterpretCodePage:                 config.InterpretCodePage,
+
+		var tableConfig *Config
+
+		// Check if we're using byte/reader data sources
+		if config.Data != nil || config.Reader != nil {
+			// Use provider functions to get table data
+			if config.TableProvider != nil {
+				dbfData, memoData, err := config.TableProvider(tableName)
+				if err != nil {
+					return nil, NewErrorf("failed to get data for table %s: %v", tableName, err)
+				}
+				if dbfData == nil {
+					continue // Skip if no data provided
+				}
+
+				tableConfig = &Config{
+					Data:                              dbfData,
+					MemoData:                          memoData,
+					Converter:                         config.Converter,
+					Untested:                          config.Untested,
+					TrimSpaces:                        config.TrimSpaces,
+					DisableConvertFilenameUnderscores: config.DisableConvertFilenameUnderscores,
+					ReadOnly:                          config.ReadOnly,
+					WriteLock:                         config.WriteLock,
+					ValidateCodePage:                  config.ValidateCodePage,
+					InterpretCodePage:                 config.InterpretCodePage,
+				}
+			} else if config.TableReaderProvider != nil {
+				dbfReader, memoReader, err := config.TableReaderProvider(tableName)
+				if err != nil {
+					return nil, NewErrorf("failed to get readers for table %s: %v", tableName, err)
+				}
+				if dbfReader == nil {
+					continue // Skip if no reader provided
+				}
+
+				tableConfig = &Config{
+					Reader:                            dbfReader,
+					MemoReader:                        memoReader,
+					Converter:                         config.Converter,
+					Untested:                          config.Untested,
+					TrimSpaces:                        config.TrimSpaces,
+					DisableConvertFilenameUnderscores: config.DisableConvertFilenameUnderscores,
+					ReadOnly:                          config.ReadOnly,
+					WriteLock:                         config.WriteLock,
+					ValidateCodePage:                  config.ValidateCodePage,
+					InterpretCodePage:                 config.InterpretCodePage,
+				}
+			} else {
+				return nil, NewError("when using Data or Reader for database, you must provide TableProvider or TableReaderProvider")
+			}
+		} else {
+			// Use filesystem access
+			tablePath := path.Join(filepath.Dir(config.Filename), tableName+string(DBF))
+			// Replace underscores with spaces
+			if !config.DisableConvertFilenameUnderscores {
+				tablePath = path.Join(filepath.Dir(config.Filename), strings.ReplaceAll(tableName, "_", " ")+string(DBF))
+			}
+			tableConfig = &Config{
+				Filename:                          tablePath,
+				Converter:                         config.Converter,
+				Exclusive:                         config.Exclusive,
+				Untested:                          config.Untested,
+				TrimSpaces:                        config.TrimSpaces,
+				DisableConvertFilenameUnderscores: config.DisableConvertFilenameUnderscores,
+				ReadOnly:                          config.ReadOnly,
+				WriteLock:                         config.WriteLock,
+				ValidateCodePage:                  config.ValidateCodePage,
+				InterpretCodePage:                 config.InterpretCodePage,
+			}
 		}
 		// Load the table
 		table, err := OpenTable(tableConfig)

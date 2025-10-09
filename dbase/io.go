@@ -1,5 +1,7 @@
 package dbase
 
+import "io"
+
 // IO is the interface for working with dBase files.
 // It provides methods for opening, reading, writing, and managing dBase database files and their memo files.
 // Three implementations are available:
@@ -28,9 +30,58 @@ type IO interface {
 }
 
 // OpenTable opens a dBase database file (and the memo file if needed).
-// The config parameter is required to specify the file path, encoding, file handles (IO) and other options.
+// The config parameter is required to specify either:
+//   - Filename: path to DBF file on filesystem
+//   - Data: DBF file content as bytes (with optional MemoData for FPT content)
+//   - Reader: DBF file content as io.ReadWriteSeeker (with optional MemoReader)
+//
 // If config.IO is nil, the default implementation is used depending on the operating system.
 func OpenTable(config *Config) (*File, error) {
+	if config == nil {
+		return nil, NewError("missing dbase configuration")
+	}
+
+	// Check if we have byte data or readers instead of filesystem files
+	if config.Data != nil || config.Reader != nil {
+		// Use GenericIO for byte/reader data
+		var dbfHandle, memoHandle io.ReadWriteSeeker
+
+		if config.Reader != nil {
+			dbfHandle = config.Reader
+			memoHandle = config.MemoReader
+		} else if config.Data != nil {
+			dbfHandle = NewBytesReadWriteSeeker(config.Data)
+			if dbfHandle == nil {
+				return nil, NewError("failed to create reader from DBF data")
+			}
+			if config.MemoData != nil {
+				memoHandle = NewBytesReadWriteSeeker(config.MemoData)
+				if memoHandle == nil {
+					return nil, NewError("failed to create reader from memo data")
+				}
+			}
+		}
+
+		// Create a copy of config with GenericIO
+		configCopy := *config
+		configCopy.IO = GenericIO{
+			Handle:        dbfHandle,
+			RelatedHandle: memoHandle,
+		}
+
+		// Set a dummy filename for internal processing if not provided
+		if configCopy.Filename == "" {
+			configCopy.Filename = "memory.dbf"
+		}
+
+		return configCopy.IO.OpenTable(&configCopy)
+	}
+
+	// Fall back to filesystem access
+	if config.Filename == "" {
+		return nil, NewError("missing filename, data, or reader in configuration")
+	}
+
 	if config.IO == nil {
 		config.IO = DefaultIO
 	}

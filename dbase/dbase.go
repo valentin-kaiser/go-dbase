@@ -42,8 +42,13 @@
 // interfacing with legacy applications, and building tools for dBase file manipulation.
 package dbase
 
+import "io"
+
 // Config is a struct containing the configuration for opening a Foxpro/dbase databse or table.
-// The filename is mandatory.
+// You must provide either:
+//   - Filename (path to DBF file on filesystem)
+//   - Data (DBF file content as bytes)
+//   - Reader (DBF file content as io.ReadWriteSeeker)
 //
 // The other fields are optional and are false by default.
 // If Converter and InterpretCodePage are both not set the package will try to interpret the code page mark.
@@ -61,6 +66,17 @@ type Config struct {
 	ValidateCodePage                  bool              // Whether or not the code page mark should be validated.
 	InterpretCodePage                 bool              // Whether or not the code page mark should be interpreted. Ignores the defined converter.
 	IO                                IO                // The IO interface to use.
+
+	// Alternative data sources (instead of filesystem files)
+	Data       []byte             // DBF file data as bytes (alternative to Filename)
+	MemoData   []byte             // FPT memo file data as bytes (optional)
+	Reader     io.ReadWriteSeeker // DBF file reader (alternative to Filename and Data)
+	MemoReader io.ReadWriteSeeker // FPT memo file reader (optional)
+
+	// Table data provider for databases (when using Data/Reader instead of filesystem)
+	// This function will be called to get table data for each table referenced in a database
+	TableProvider       func(tableName string) (dbfData []byte, memoData []byte, err error)
+	TableReaderProvider func(tableName string) (dbfReader io.ReadWriteSeeker, memoReader io.ReadWriteSeeker, err error)
 }
 
 // Modification allows to change the column name or value type of a column when reading the table
