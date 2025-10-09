@@ -6,13 +6,11 @@ import (
 )
 
 func TestOpenTableIO(t *testing.T) {
-	// Test with nil config - this should panic, so we need to handle it
-	defer func() {
-		if r := recover(); r == nil {
-			t.Error("Expected panic for nil config")
-		}
-	}()
-	_, _ = OpenTable(nil)
+	// Test with nil config - this should return an error
+	_, err := OpenTable(nil)
+	if err == nil {
+		t.Error("Expected error for nil config")
+	}
 }
 
 func TestFile_defaults(t *testing.T) {

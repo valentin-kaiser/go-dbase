@@ -244,6 +244,16 @@ func TestOpenDatabaseFromBytes(t *testing.T) {
 		t.Fatalf("Failed to read DBC file: %v", err)
 	}
 
+	// Read database memo file (DCT)
+	dctFile := "../examples/test_data/database/EXPENSES.DCT"
+	var dctData []byte
+	if _, err := os.Stat(dctFile); err == nil {
+		dctData, err = os.ReadFile(dctFile)
+		if err != nil {
+			t.Fatalf("Failed to read DCT file: %v", err)
+		}
+	}
+
 	// Create table provider
 	tableProvider := func(tableName string) ([]byte, []byte, error) {
 		dbfPath := "../examples/test_data/database/" + tableName + ".dbf"
@@ -266,6 +276,7 @@ func TestOpenDatabaseFromBytes(t *testing.T) {
 	// Test opening database from bytes
 	db, err := OpenDatabase(&Config{
 		Data:          dbcData,
+		MemoData:      dctData,
 		TableProvider: tableProvider,
 		TrimSpaces:    true,
 	})
