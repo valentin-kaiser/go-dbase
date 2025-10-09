@@ -39,7 +39,7 @@ func NewError(err string) Error {
 		trace:   make([]string, 0),
 		details: make([]error, 0),
 	}
-	e.trace = trace(e)
+	e.trace = traceError(e)
 	return e
 }
 
@@ -50,7 +50,7 @@ func NewErrorf(format string, a ...interface{}) Error {
 		trace:   make([]string, 0),
 		details: make([]error, 0),
 	}
-	e.trace = trace(e)
+	e.trace = traceError(e)
 	return e
 }
 
@@ -87,7 +87,7 @@ func WrapError(err error) Error {
 		return NewError("unknown error occurred - cant wrap nil error")
 	}
 	if e, ok := err.(Error); ok {
-		e.trace = trace(e)
+		e.trace = traceError(e)
 		return e
 	}
 	e := Error{
@@ -95,11 +95,11 @@ func WrapError(err error) Error {
 		trace:   make([]string, 0),
 		details: make([]error, 0),
 	}
-	e.trace = trace(e)
+	e.trace = traceError(e)
 	return e
 }
 
-func trace(e Error) []string {
+func traceError(e Error) []string {
 	_, file, line, ok := runtime.Caller(2)
 	if !ok {
 		return e.trace

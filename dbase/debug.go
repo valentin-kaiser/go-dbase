@@ -1,9 +1,11 @@
 package dbase
 
 import (
+	"fmt"
 	"io"
 	"log"
 	"os"
+	"runtime"
 )
 
 var (
@@ -25,6 +27,18 @@ func Debug(enabled bool, out io.Writer) {
 
 func debugf(format string, v ...interface{}) {
 	if debug {
-		debugLogger.Printf(format, v...)
+		debugLogger.Print(trace() + " - " + fmt.Sprintf(format, v...))
 	}
+}
+
+func trace() string {
+	pc, file, line, ok := runtime.Caller(2)
+	if !ok {
+		return ""
+	}
+
+	if f := runtime.FuncForPC(pc); f != nil {
+		return fmt.Sprintf("%v:%v", f.Name(), line)
+	}
+	return fmt.Sprintf("%v:%v", file, line)
 }
