@@ -316,7 +316,7 @@ func TestConfigValidation(t *testing.T) {
 	if err == nil {
 		t.Error("Expected error for missing data source")
 	}
-	if !strings.Contains(err.Error(), "missing filename, data, or reader") {
+	if !strings.Contains(err.Error(), "no data source provided") {
 		t.Errorf("Expected specific error message, got: %v", err)
 	}
 

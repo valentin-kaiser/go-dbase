@@ -42,6 +42,11 @@ func OpenTable(config *Config) (*File, error) {
 		return nil, NewError("missing dbase configuration")
 	}
 
+	// Validate that exactly one data source is provided
+	if err := config.validateDataSources(); err != nil {
+		return nil, err
+	}
+
 	// If custom IO is already provided, use it directly
 	if config.IO != nil {
 		return config.IO.OpenTable(config)

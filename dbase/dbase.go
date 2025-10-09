@@ -45,11 +45,13 @@ package dbase
 import "io"
 
 // Config is a struct containing the configuration for opening a Foxpro/dbase databse or table.
-// You must provide either:
+// You must provide exactly one data source:
 //   - Filename (path to DBF file on filesystem)
 //   - Data (DBF file content as bytes)
 //   - Reader (DBF file content as io.ReadWriteSeeker)
+//   - IO (custom IO interface)
 //
+// Setting multiple data sources will result in an error during table opening.
 // The other fields are optional and are false by default.
 // If Converter and InterpretCodePage are both not set the package will try to interpret the code page mark.
 // To open untested files set Untested to true. Tested files are defined in the constants.go file.
@@ -77,6 +79,39 @@ type Config struct {
 	// This function will be called to get table data for each table referenced in a database
 	TableProvider       func(tableName string) (dbfData []byte, memoData []byte, err error)
 	TableReaderProvider func(tableName string) (dbfReader io.ReadWriteSeeker, memoReader io.ReadWriteSeeker, err error)
+}
+
+// validateDataSources checks that exactly one data source is provided in the config.
+// Returns an error if zero or multiple data sources are configured.
+func (c *Config) validateDataSources() error {
+	sources := 0
+	var sourcesSet []string
+	
+	if c.Filename != "" {
+		sources++
+		sourcesSet = append(sourcesSet, "Filename")
+	}
+	if c.Data != nil {
+		sources++
+		sourcesSet = append(sourcesSet, "Data")
+	}
+	if c.Reader != nil {
+		sources++
+		sourcesSet = append(sourcesSet, "Reader")
+	}
+	if c.IO != nil {
+		sources++
+		sourcesSet = append(sourcesSet, "IO")
+	}
+	
+	if sources == 0 {
+		return NewError("no data source provided: must set exactly one of Filename, Data, Reader, or IO")
+	}
+	if sources > 1 {
+		return NewErrorf("multiple data sources provided (%v): must set exactly one of Filename, Data, Reader, or IO", sourcesSet)
+	}
+	
+	return nil
 }
 
 // Modification allows to change the column name or value type of a column when reading the table
