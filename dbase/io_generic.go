@@ -25,8 +25,14 @@ func (g GenericIO) OpenTable(config *Config) (*File, error) {
 		return nil, NewError("missing dbase configuration")
 	}
 	debugf("Opening table from custom io interface - Untested: %v - Trim spaces: %v - ValidateCodepage: %v - InterpretCodepage: %v", config.Untested, config.TrimSpaces, config.ValidateCodePage, config.InterpretCodePage)
-	fileName := filepath.Clean(config.Filename)
-	fileExtension := FileExtension(strings.ToUpper(filepath.Ext(config.Filename)))
+	
+	// Handle case where no filename is provided (e.g., when using byte data)
+	fileName := config.Filename
+	if fileName == "" {
+		fileName = "table.dbf" // Default name for byte-based tables
+	}
+	fileName = filepath.Clean(fileName)
+	fileExtension := FileExtension(strings.ToUpper(filepath.Ext(fileName)))
 	file := &File{
 		config:        config,
 		io:            g,

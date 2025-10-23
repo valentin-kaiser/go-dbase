@@ -49,7 +49,14 @@ func OpenTable(config *Config) (*File, error) {
 
 	// If custom IO is already provided, use it directly
 	if config.IO != nil {
-		return config.IO.OpenTable(config)
+		file, err := config.IO.OpenTable(config)
+		if err != nil {
+			return nil, err
+		}
+		if file == nil {
+			return nil, NewError("custom IO OpenTable returned nil file without error")
+		}
+		return file, nil
 	}
 
 	// No custom IO provided, so create one based on available data sources
@@ -76,7 +83,14 @@ func OpenTable(config *Config) (*File, error) {
 			RelatedHandle: memoHandle,
 		}
 
-		return configCopy.IO.OpenTable(&configCopy)
+		file, err := configCopy.IO.OpenTable(&configCopy)
+		if err != nil {
+			return nil, err
+		}
+		if file == nil {
+			return nil, NewError("OpenTable returned nil file without error")
+		}
+		return file, nil
 	}
 
 	// Fall back to filesystem access with DefaultIO
@@ -85,11 +99,21 @@ func OpenTable(config *Config) (*File, error) {
 	}
 
 	config.IO = DefaultIO
-	return config.IO.OpenTable(config)
+	file, err := config.IO.OpenTable(config)
+	if err != nil {
+		return nil, err
+	}
+	if file == nil {
+		return nil, NewError("OpenTable returned nil file without error")
+	}
+	return file, nil
 }
 
 // Close closes all file handlers for the dBase file and its associated memo file.
 func (file *File) Close() error {
+	if file == nil {
+		return NewError("Close called on nil File")
+	}
 	return file.defaults().io.Close(file)
 }
 

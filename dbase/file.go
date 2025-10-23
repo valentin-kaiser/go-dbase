@@ -25,11 +25,20 @@ type File struct {
 
 // TableName returns the name of the dBase table.
 func (file *File) TableName() string {
+	if file == nil {
+		panic("TableName called on nil File")
+	}
+	if file.table == nil {
+		panic("TableName called on File with nil table")
+	}
 	return file.table.name
 }
 
 // EOF returns true if the internal row pointer is at the end of file.
 func (file *File) EOF() bool {
+	if file == nil || file.table == nil || file.header == nil {
+		panic("EOF called on invalid File")
+	}
 	return file.table.rowPointer >= file.header.RowsCount
 }
 
@@ -55,11 +64,17 @@ func (file *File) RowsCount() uint32 {
 
 // Columns returns all columns in the dBase table.
 func (file *File) Columns() []*Column {
+	if file == nil || file.table == nil {
+		panic("Columns called on invalid File")
+	}
 	return file.table.columns
 }
 
 // Column returns the column at the specified position, or nil if the position is invalid.
 func (file *File) Column(pos int) *Column {
+	if file == nil || file.table == nil {
+		panic("Column called on invalid File")
+	}
 	if pos < 0 || pos >= len(file.table.columns) {
 		return nil
 	}
@@ -156,6 +171,9 @@ func (file *File) Init() error {
 // If skipInvalid is true, invalid rows are skipped instead of returning an error.
 // If skipDeleted is true, deleted rows are excluded from the result.
 func (file *File) Rows(skipInvalid bool, skipDeleted bool) ([]*Row, error) {
+	if file == nil {
+		return nil, NewError("Rows called on nil File")
+	}
 	rows := make([]*Row, 0)
 	for !file.EOF() {
 		row, err := file.Next()
