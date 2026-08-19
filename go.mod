@@ -1,6 +1,6 @@
 module github.com/valentin-kaiser/go-dbase
 
-go 1.25.0
+go 1.26
 
 require (
 	golang.org/x/sys v0.45.0
