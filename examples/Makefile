@@ -1,6 +1,6 @@
-.PHONY: all clean read write create custom search dexport schema documentation bytes reader
+.PHONY: all clean read write create custom search export schema documentation bytes reader
 
-all: clean read write create custom search dexport schema documentation bytes reader
+all: clean read write create custom search export schema documentation bytes reader
 read:
 	cd read && go run ./read.go
 write:
@@ -11,7 +11,7 @@ custom:
 	cd custom && go run custom.go
 search:
 	cd search && go run search.go
-dexport:
+export:
 	cd database && go run export.go
 schema:
 	cd schema && go run schema.go

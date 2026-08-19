@@ -266,8 +266,8 @@ func TestOpenDatabaseFromBytes(t *testing.T) {
 		}
 
 		var memoData []byte
-		if _, err := os.Stat(memoPath); err == nil {
-			memoData, _ = os.ReadFile(memoPath)
+		if resolvedMemoPath, err := findFile(memoPath); err == nil {
+			memoData, _ = os.ReadFile(resolvedMemoPath)
 		}
 
 		return dbfData, memoData, nil

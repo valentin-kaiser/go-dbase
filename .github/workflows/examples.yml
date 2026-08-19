@@ -25,25 +25,31 @@ jobs:
       - name: Setup Go
         uses: actions/setup-go@v7
         with:
-          go-version: '1.25'
+          go-version: '1.26'
           check-latest: true
       - name: Check out source code
         uses: actions/checkout@v4
       - name: Install dependencies
         run: go mod tidy
       - name: Run read table example
-        run: cd examples && make read_table
+        run: cd examples && make read
       - name: Run write table example
-        run: cd examples && make write_table
+        run: cd examples && make write
       - name: Run create table example
-        run: cd examples && make create_table
+        run: cd examples && make create
       - name: Run open table custom
-        run: cd examples && make open_table_custom
+        run: cd examples && make custom
       - name: Run search table example
-        run: cd examples && make search_table
+        run: cd examples && make search
       - name: Run database export example
-        run: cd examples && make database_export
+        run: cd examples && make export
       - name: Run database documentation example
-        run: cd examples && make database_documentation
+        run: cd examples && make documentation
       - name: Run database schema example
-        run: cd examples && make database_schema
+        run: cd examples && make schema
+
+      - name: Run bytes example
+        run: cd examples && make bytes
+      
+      - name: Run reader example
+        run: cd examples && make reader
