@@ -35,95 +35,112 @@ import (
 //
 // Not all available column types have been implemented because we don't use them in our DBFs
 func (file *File) Interpret(raw []byte, column *Column) (interface{}, error) {
-	var funcs = map[DataType]func([]byte, *Column) (interface{}, error){
-		// M values contain the address in the FPT file from where to read data
-		Memo: file.parseMemo,
-		// C values are stored as strings, the returned string is not trimmed
-		Character: file.parseCharacter,
-		// I values are stored as numeric values
-		Integer: file.parseInteger,
-		// Y values are currency values stored as ints with 4 decimal places
-		Currency: file.parseCurrency,
-		// F values are stored as string values
-		Float: file.parseFloat,
-		// B (double) values are stored as numeric values
-		Double: file.parseDouble,
-		// D values are stored as string in format YYYYMMDD, convert to time.Time
-		Date: file.parseDate,
-		// T values are stores as two 4 byte integers
-		//  integer one is the date in julian format
-		//  integer two is the number of milliseconds since midnight
-		DateTime: file.parseDateTime,
-		// L values are stored as strings T or F, we only check for T, the rest is false...
-		Logical: file.parseLogical,
-		// N values are stored as string values, if no decimals return as int64, if decimals treat as float64
-		Numeric: file.parseNumeric,
-		// V and Q values just return the raw value
-		Varchar:   file.parseVarchar,
-		Varbinary: file.parseVarbinary,
-		// W, P and G values just return the raw value
-		Blob:    file.parseRaw,
-		Picture: file.parseRaw,
-		General: file.parseRaw,
-	}
-
 	if len(raw) != int(column.Length) {
 		return nil, NewErrorf("invalid length %v Bytes != %v Bytes at column field: %v", len(raw), column.Length, column.Name())
 	}
 
-	f, ok := funcs[DataType(column.DataType)]
-	if !ok {
+	// A switch is used instead of a lookup table because Interpret runs once per
+	// column of every row. Building a map of bound method values here would
+	// allocate the map and all its closures on every single call.
+	switch DataType(column.DataType) {
+	// M values contain the address in the FPT file from where to read data
+	case Memo:
+		return file.parseMemo(raw, column)
+	// C values are stored as strings, the returned string is not trimmed
+	case Character:
+		return file.parseCharacter(raw, column)
+	// I values are stored as numeric values
+	case Integer:
+		return file.parseInteger(raw, column)
+	// Y values are currency values stored as ints with 4 decimal places
+	case Currency:
+		return file.parseCurrency(raw, column)
+	// F values are stored as string values
+	case Float:
+		return file.parseFloat(raw, column)
+	// B (double) values are stored as numeric values
+	case Double:
+		return file.parseDouble(raw, column)
+	// D values are stored as string in format YYYYMMDD, convert to time.Time
+	case Date:
+		return file.parseDate(raw, column)
+	// T values are stores as two 4 byte integers
+	//  integer one is the date in julian format
+	//  integer two is the number of milliseconds since midnight
+	case DateTime:
+		return file.parseDateTime(raw, column)
+	// L values are stored as strings T or F, we only check for T, the rest is false...
+	case Logical:
+		return file.parseLogical(raw, column)
+	// N values are stored as string values, if no decimals return as int64, if decimals treat as float64
+	case Numeric:
+		return file.parseNumeric(raw, column)
+	// V and Q values just return the raw value
+	case Varchar:
+		return file.parseVarchar(raw, column)
+	case Varbinary:
+		return file.parseVarbinary(raw, column)
+	// W, P and G values just return the raw value
+	case Blob, Picture, General:
+		return file.parseRaw(raw, column)
+	default:
 		return nil, NewErrorf("unsupported column data type: %s at column field: %v", DataType(column.DataType), column.Name())
 	}
-
-	return f(raw, column)
 }
 
 // Represent converts column data to the byte representation of the columns data type
 // For M values the data is written to the memo file and the address is returned
 func (file *File) Represent(field *Field, padding bool) ([]byte, error) {
-	var funcs = map[DataType]func(*Field, bool) ([]byte, error){
-		// M values contain the address in the FPT file from where to read data
-		Memo: file.getMemoRepresentation,
-		// C values are stored as strings, the returned string is not trimmed
-		Character: file.getCharacterRepresentation,
-		// I values (int32)
-		Integer: file.getIntegerRepresentation,
-		// Y (currency)
-		Currency: file.getCurrencyRepresentation,
-		// F (Float)
-		Float: file.getFloatRepresentation,
-		// B (double)
-		Double: file.getDoubleRepresentation,
-		// D values are stored as string in format YYYYMMDD, convert to time.Time
-		Date: file.getDateRepresentation,
-		// T values are stores as two 4 byte integers
-		//  integer one is the date in julian format
-		//  integer two is the number of milliseconds since midnight
-		DateTime: file.getDateTimeRepresentation,
-		// L (bool) values are stored as strings T or F, we only check for T, the rest is false...
-		Logical: file.getLogicalRepresentation,
-		// N values are stored as string values, if no decimals return as int64, if decimals treat as float64
-		Numeric: file.getNumericRepresentation,
-		// V and Q values just return the raw value
-		Varchar:   file.getVarcharRepresentation,
-		Varbinary: file.getVarbinaryRepresentation,
-		// W, P and G values just return the raw value
-		Blob:    file.getRawRepresentation,
-		Picture: file.getRawRepresentation,
-		General: file.getRawRepresentation,
-	}
-
 	if field.GetValue() == nil {
 		return make([]byte, field.column.Length), nil
 	}
 
-	f, ok := funcs[DataType(field.column.DataType)]
-	if !ok {
+	// See Interpret: a switch avoids allocating a map of bound method values on
+	// every call.
+	switch DataType(field.column.DataType) {
+	// M values contain the address in the FPT file from where to read data
+	case Memo:
+		return file.getMemoRepresentation(field, padding)
+	// C values are stored as strings, the returned string is not trimmed
+	case Character:
+		return file.getCharacterRepresentation(field, padding)
+	// I values (int32)
+	case Integer:
+		return file.getIntegerRepresentation(field, padding)
+	// Y (currency)
+	case Currency:
+		return file.getCurrencyRepresentation(field, padding)
+	// F (Float)
+	case Float:
+		return file.getFloatRepresentation(field, padding)
+	// B (double)
+	case Double:
+		return file.getDoubleRepresentation(field, padding)
+	// D values are stored as string in format YYYYMMDD, convert to time.Time
+	case Date:
+		return file.getDateRepresentation(field, padding)
+	// T values are stores as two 4 byte integers
+	//  integer one is the date in julian format
+	//  integer two is the number of milliseconds since midnight
+	case DateTime:
+		return file.getDateTimeRepresentation(field, padding)
+	// L (bool) values are stored as strings T or F, we only check for T, the rest is false...
+	case Logical:
+		return file.getLogicalRepresentation(field, padding)
+	// N values are stored as string values, if no decimals return as int64, if decimals treat as float64
+	case Numeric:
+		return file.getNumericRepresentation(field, padding)
+	// V and Q values just return the raw value
+	case Varchar:
+		return file.getVarcharRepresentation(field, padding)
+	case Varbinary:
+		return file.getVarbinaryRepresentation(field, padding)
+	// W, P and G values just return the raw value
+	case Blob, Picture, General:
+		return file.getRawRepresentation(field, padding)
+	default:
 		return nil, NewErrorf("unsupported column data type: %s at column field: %v", DataType(field.column.DataType), field.Name())
 	}
-
-	return f(field, padding)
 }
 
 // Returns the value from the memo file as string or []byte
