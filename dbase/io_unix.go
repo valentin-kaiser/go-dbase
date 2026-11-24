@@ -148,7 +148,7 @@ func (u UnixIO) Close(file *File) error {
 }
 
 func (u UnixIO) Create(file *File) error {
-	file.config.Filename = strings.ToUpper(strings.TrimSpace(file.config.Filename))
+	file.config.Filename = upperBase(strings.TrimSpace(file.config.Filename))
 	// Check for valid file name
 	if len(file.config.Filename) == 0 {
 		return NewError("missing filename")
@@ -163,7 +163,7 @@ func (u UnixIO) Create(file *File) error {
 	}
 	// Create the file
 	debugf("Creating file: %s", file.config.Filename)
-	handle, err := os.Create(strings.ToUpper(file.config.Filename))
+	handle, err := os.Create(file.config.Filename)
 	if err != nil {
 		return NewError("creating DBF file failed").Details(err)
 	}
@@ -724,4 +724,10 @@ func (u UnixIO) getRelatedHandle(file *File) (*os.File, error) {
 		return nil, WrapError(ErrNoFPT)
 	}
 	return handle, nil
+}
+
+// upperBase upper-cases only the file name, leaving the directory path intact
+// (paths are case-sensitive on Unix).
+func upperBase(path string) string {
+	return filepath.Join(filepath.Dir(path), strings.ToUpper(filepath.Base(path)))
 }
